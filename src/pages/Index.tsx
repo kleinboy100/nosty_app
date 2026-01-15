@@ -18,7 +18,7 @@ interface Restaurant {
   average_prep_time: number;
 }
 
-const cuisineTypes = ['All', 'Italian', 'Japanese', 'Mexican', 'American', 'Chinese', 'Indian', 'Thai'];
+const cuisineTypes = ['All', 'Kasi Food', 'Braai & Grill', 'Bunny Chow', 'Pap & Vleis', 'Gatsby', 'Vetkoek', 'Shisanyama', 'Traditional', 'Fast Food'];
 
 export default function Index() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -67,18 +67,18 @@ export default function Index() {
         <div className="relative container mx-auto px-4 h-full flex flex-col justify-center">
           <div className="max-w-xl">
             <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-card mb-4 animate-fade-in">
-              Delicious food,
+              Mzansi flavors,
               <br />
-              <span className="text-primary">delivered fast</span>
+              <span className="text-primary">straight to you</span>
             </h1>
             <p className="text-card/80 text-lg mb-8 animate-fade-in">
-              Order from the best local restaurants with easy, on-demand delivery.
+              Order from the best local kasi takeaways and restaurants across South Africa.
             </p>
             <div className="flex gap-4 animate-slide-up">
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
                 <Input
-                  placeholder="Search restaurants or cuisines..."
+                  placeholder="Search takeaways, kasi spots..."
                   className="pl-10 h-12 bg-card border-0 shadow-lg"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -96,12 +96,12 @@ export default function Index() {
             <div className="flex items-center gap-3">
               <ChefHat className="text-primary" size={32} />
               <div>
-                <p className="font-display font-semibold text-foreground">Own a restaurant?</p>
-                <p className="text-muted-foreground text-sm">Register your restaurant and reach more customers</p>
+                <p className="font-display font-semibold text-foreground">Own a takeaway or restaurant?</p>
+                <p className="text-muted-foreground text-sm">Join KasiConnect and reach more customers in your area</p>
               </div>
             </div>
             <Link to="/restaurant/register">
-              <Button className="btn-primary">Register Your Restaurant</Button>
+              <Button className="btn-primary">Register Your Takeaway</Button>
             </Link>
           </div>
         </div>
@@ -132,7 +132,7 @@ export default function Index() {
       <section className="py-8">
         <div className="container mx-auto px-4">
           <h2 className="font-display text-2xl font-bold text-foreground mb-6">
-            {selectedCuisine === 'All' ? 'All Restaurants' : `${selectedCuisine} Restaurants`}
+            {selectedCuisine === 'All' ? 'All Takeaways & Restaurants' : `${selectedCuisine} Spots`}
           </h2>
           
           {loading ? (
@@ -150,7 +150,7 @@ export default function Index() {
             </div>
           ) : filteredRestaurants.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground text-lg">No restaurants found</p>
+              <p className="text-muted-foreground text-lg">No takeaways found</p>
               <p className="text-muted-foreground text-sm mt-2">Try adjusting your search or filters</p>
             </div>
           ) : (

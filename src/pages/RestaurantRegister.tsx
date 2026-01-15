@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-const cuisineTypes = ['Italian', 'Japanese', 'Mexican', 'American', 'Chinese', 'Indian', 'Thai', 'French', 'Mediterranean'];
+const cuisineTypes = ['Kasi Food', 'Braai & Grill', 'Bunny Chow', 'Pap & Vleis', 'Gatsby', 'Vetkoek', 'Shisanyama', 'Traditional', 'Fast Food', 'Pizza', 'Chicken', 'Seafood'];
 
 export default function RestaurantRegister() {
   const { user } = useAuth();
@@ -31,9 +31,9 @@ export default function RestaurantRegister() {
   return (
     <div className="min-h-screen py-8">
       <div className="container mx-auto px-4 max-w-xl">
-        <h1 className="font-display text-3xl font-bold mb-8">Register Your Restaurant</h1>
+        <h1 className="font-display text-3xl font-bold mb-8">Register Your Takeaway</h1>
         <form onSubmit={handleSubmit} className="card-elevated p-6 space-y-4">
-          <div><Label>Restaurant Name *</Label><Input required value={form.name} onChange={e => setForm({...form, name: e.target.value})} /></div>
+          <div><Label>Takeaway / Restaurant Name *</Label><Input required value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="e.g. Mama's Kitchen, Kasi Grill" /></div>
           <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} /></div>
           <div><Label>Cuisine Type *</Label>
             <Select required value={form.cuisine_type} onValueChange={v => setForm({...form, cuisine_type: v})}>
@@ -41,9 +41,9 @@ export default function RestaurantRegister() {
               <SelectContent>{cuisineTypes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div><Label>Address *</Label><Input required value={form.address} onChange={e => setForm({...form, address: e.target.value})} /></div>
+          <div><Label>Address *</Label><Input required value={form.address} onChange={e => setForm({...form, address: e.target.value})} placeholder="e.g. 123 Main Rd, Soweto" /></div>
           <div><Label>Phone</Label><Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} /></div>
-          <Button type="submit" className="w-full btn-primary" disabled={loading}>{loading ? 'Registering...' : 'Register Restaurant'}</Button>
+          <Button type="submit" className="w-full btn-primary" disabled={loading}>{loading ? 'Registering...' : 'Register Takeaway'}</Button>
         </form>
       </div>
     </div>
