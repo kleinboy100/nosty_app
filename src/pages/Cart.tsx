@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, Minus, Plus, ShoppingBag, ArrowLeft } from 'lucide-react';
+import { Trash2, Minus, Plus, ShoppingBag, ArrowLeft, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,6 +8,9 @@ import { Label } from '@/components/ui/label';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useGeolocation } from '@/hooks/useGeolocation';
+import { LocationButton } from '@/components/LocationButton';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function Cart() {
@@ -15,10 +18,42 @@ export default function Cart() {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { permission, requestPermission, supported } = usePushNotifications();
+  const { getCurrentLocation } = useGeolocation();
   
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
+  const [gettingLocation, setGettingLocation] = useState(false);
+
+  // Auto-get current location on mount
+  useEffect(() => {
+    const getLocation = async () => {
+      setGettingLocation(true);
+      const address = await getCurrentLocation();
+      if (address) {
+        setDeliveryAddress(address);
+      }
+      setGettingLocation(false);
+    };
+    getLocation();
+  }, []);
+
+  const handleEnableNotifications = async () => {
+    const granted = await requestPermission();
+    if (granted) {
+      toast({
+        title: "Notifications enabled",
+        description: "You'll receive updates about your order status."
+      });
+    } else {
+      toast({
+        title: "Notifications blocked",
+        description: "Please enable notifications in your browser settings.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const handlePlaceOrder = async () => {
     if (!user) {
@@ -140,7 +175,7 @@ export default function Cart() {
                 <div key={item.id} className="card-elevated p-4 flex items-center gap-4">
                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-foreground">{item.name}</h3>
-                    <p className="text-primary font-semibold">${item.price.toFixed(2)} each</p>
+                    <p className="text-primary font-semibold">R{item.price.toFixed(2)} each</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -162,7 +197,7 @@ export default function Cart() {
                     </Button>
                   </div>
                   <p className="font-semibold text-foreground w-20 text-right">
-                    ${(item.price * item.quantity).toFixed(2)}
+                    R{(item.price * item.quantity).toFixed(2)}
                   </p>
                   <Button
                     variant="ghost"
@@ -182,14 +217,34 @@ export default function Cart() {
             <div className="card-elevated p-6 sticky top-24">
               <h2 className="font-display text-xl font-bold text-foreground mb-6">Order Summary</h2>
               
+              {/* Notification Permission */}
+              {supported && permission !== 'granted' && (
+                <div className="bg-muted/50 rounded-lg p-4 mb-4">
+                  <div className="flex items-start gap-3">
+                    <Bell className="text-primary mt-0.5" size={20} />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Enable order notifications</p>
+                      <p className="text-xs text-muted-foreground mb-2">Get updates when your order status changes</p>
+                      <Button size="sm" variant="outline" onClick={handleEnableNotifications}>
+                        Enable Notifications
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-4 mb-6">
                 <div className="space-y-2">
-                  <Label htmlFor="address">Delivery Address *</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="address">Delivery Address *</Label>
+                    <LocationButton onLocationReceived={setDeliveryAddress} />
+                  </div>
                   <Input
                     id="address"
-                    placeholder="Enter your full address"
+                    placeholder={gettingLocation ? "Getting your location..." : "Enter your full address"}
                     value={deliveryAddress}
                     onChange={(e) => setDeliveryAddress(e.target.value)}
+                    disabled={gettingLocation}
                   />
                 </div>
                 <div className="space-y-2">
@@ -207,15 +262,15 @@ export default function Cart() {
               <div className="border-t border-border pt-4 space-y-2 mb-6">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Subtotal</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>R{total.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Delivery Fee</span>
-                  <span>$2.99</span>
+                  <span>R25.00</span>
                 </div>
                 <div className="flex justify-between font-semibold text-foreground text-lg pt-2 border-t border-border">
                   <span>Total</span>
-                  <span>${(total + 2.99).toFixed(2)}</span>
+                  <span>R{(total + 25).toFixed(2)}</span>
                 </div>
               </div>
 

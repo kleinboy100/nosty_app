@@ -47,7 +47,7 @@ export default function Orders() {
                   <p className="text-sm text-muted-foreground">{new Date(order.created_at).toLocaleDateString()}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold">${Number(order.total_amount).toFixed(2)}</p>
+                  <p className="font-semibold">R{Number(order.total_amount).toFixed(2)}</p>
                   <span className={`order-status-badge status-${order.status}`}>{order.status}</span>
                 </div>
               </Link>
