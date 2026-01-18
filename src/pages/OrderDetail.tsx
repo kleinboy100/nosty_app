@@ -2,13 +2,16 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { OrderStatusTracker } from '@/components/OrderStatusTracker';
 import { DeliveryMap } from '@/components/DeliveryMap';
+import { OrderChat } from '@/components/OrderChat';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Bell } from 'lucide-react';
+import { MapPin, Bell, XCircle } from 'lucide-react';
 import { usePushNotifications, ORDER_STATUS_MESSAGES } from '@/hooks/usePushNotifications';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function OrderDetail() {
   const { id } = useParams();
+  const { user } = useAuth();
   const [order, setOrder] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
   const { permission, requestPermission, showNotification, supported } = usePushNotifications();
@@ -74,8 +77,44 @@ export default function OrderDetail() {
         )}
         
         <div className="card-elevated p-6 mb-6">
-          <h2 className="font-semibold mb-4">Order Status</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold">Order Status</h2>
+            {order.status !== 'cancelled' && order.status !== 'delivered' && (
+              <OrderChat orderId={order.id} userType="customer" />
+            )}
+          </div>
           <OrderStatusTracker status={order.status} />
+          
+          {/* Status Messages */}
+          {order.status === 'pending' && (
+            <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <p className="text-sm text-yellow-800">
+                ⏳ Waiting for the restaurant to confirm your order...
+              </p>
+            </div>
+          )}
+          {order.status === 'confirmed' && (
+            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                ✅ Order confirmed! The restaurant will start preparing soon.
+              </p>
+            </div>
+          )}
+          {order.status === 'preparing' && (
+            <div className="mt-4 bg-orange-50 border border-orange-200 rounded-lg p-3">
+              <p className="text-sm text-orange-800">
+                👨‍🍳 Your food is being prepared with care!
+              </p>
+            </div>
+          )}
+          {order.status === 'cancelled' && (
+            <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2">
+              <XCircle className="text-red-500" size={18} />
+              <p className="text-sm text-red-800">
+                This order was cancelled. Please contact us if you have questions.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Live Delivery Map */}
