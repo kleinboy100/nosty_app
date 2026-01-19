@@ -3,8 +3,9 @@ import { useParams } from 'react-router-dom';
 import { OrderStatusTracker } from '@/components/OrderStatusTracker';
 import { DeliveryMap } from '@/components/DeliveryMap';
 import { OrderChat } from '@/components/OrderChat';
+import { ReviewForm } from '@/components/ReviewForm';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Bell, XCircle } from 'lucide-react';
+import { MapPin, Bell, XCircle, Star, Banknote } from 'lucide-react';
 import { usePushNotifications, ORDER_STATUS_MESSAGES } from '@/hooks/usePushNotifications';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,12 +15,15 @@ export default function OrderDetail() {
   const { user } = useAuth();
   const [order, setOrder] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
+  const [hasReviewed, setHasReviewed] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
   const { permission, requestPermission, showNotification, supported } = usePushNotifications();
   const previousStatus = useRef<string | null>(null);
 
   useEffect(() => {
     if (id) {
       fetchOrder();
+      checkExistingReview();
       const channel = supabase.channel('order-updates').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${id}` }, (payload) => {
         const newOrder = payload.new as any;
         
@@ -50,13 +54,28 @@ export default function OrderDetail() {
     }
   };
 
+  const checkExistingReview = async () => {
+    const { data } = await supabase
+      .from('reviews')
+      .select('id')
+      .eq('order_id', id)
+      .single();
+    setHasReviewed(!!data);
+  };
+
   const handleEnableNotifications = async () => {
     await requestPermission();
+  };
+
+  const handleReviewSuccess = () => {
+    setHasReviewed(true);
+    setShowReviewForm(false);
   };
 
   if (!order) return <div className="min-h-screen flex items-center justify-center"><div className="animate-pulse">Loading...</div></div>;
 
   const showMap = ['confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(order.status);
+  const canReview = order.status === 'delivered' && !hasReviewed;
 
   return (
     <div className="min-h-screen py-8">
@@ -107,6 +126,13 @@ export default function OrderDetail() {
               </p>
             </div>
           )}
+          {order.status === 'delivered' && (
+            <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3">
+              <p className="text-sm text-green-800">
+                🎉 Your order has been delivered! Enjoy your meal.
+              </p>
+            </div>
+          )}
           {order.status === 'cancelled' && (
             <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2">
               <XCircle className="text-red-500" size={18} />
@@ -139,6 +165,40 @@ export default function OrderDetail() {
           </div>
         )}
 
+        {/* Review Section */}
+        {canReview && (
+          <div className="card-elevated p-6 mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Star className="text-yellow-400" size={20} />
+              <h2 className="font-semibold">Rate Your Experience</h2>
+            </div>
+            {showReviewForm ? (
+              <ReviewForm
+                restaurantId={order.restaurant_id}
+                orderId={order.id}
+                onSuccess={handleReviewSuccess}
+              />
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-muted-foreground mb-4">How was your order?</p>
+                <Button onClick={() => setShowReviewForm(true)}>
+                  <Star className="mr-2" size={18} />
+                  Leave a Review
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {hasReviewed && order.status === 'delivered' && (
+          <div className="card-elevated p-6 mb-6 bg-green-50">
+            <div className="flex items-center gap-2">
+              <Star className="text-yellow-400 fill-yellow-400" size={20} />
+              <p className="text-sm text-green-800">Thank you for your review!</p>
+            </div>
+          </div>
+        )}
+
         <div className="card-elevated p-6">
           <h2 className="font-semibold mb-4">Items</h2>
           {items.map(item => (
@@ -151,7 +211,13 @@ export default function OrderDetail() {
             <span>Total</span>
             <span>R{Number(order.total_amount).toFixed(2)}</span>
           </div>
-          <p className="text-sm text-muted-foreground mt-4">Delivery: {order.delivery_address}</p>
+          <div className="mt-4 pt-4 border-t space-y-2">
+            <p className="text-sm text-muted-foreground">Delivery: {order.delivery_address}</p>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Banknote size={16} />
+              <span>Payment: {order.payment_method === 'cash' ? 'Cash on Delivery' : order.payment_method}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

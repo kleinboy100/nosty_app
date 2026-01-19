@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Clock, Star, MapPin, Phone, ArrowLeft } from 'lucide-react';
+import { Clock, Star, MapPin, Phone, ArrowLeft, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MenuItem } from '@/components/MenuItem';
+import { ReviewList } from '@/components/ReviewList';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Restaurant {
@@ -33,6 +34,7 @@ export default function RestaurantDetail() {
   const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [activeTab, setActiveTab] = useState<'menu' | 'reviews'>('menu');
 
   useEffect(() => {
     if (id) {
@@ -109,12 +111,15 @@ export default function RestaurantDetail() {
                 <span className="text-sm bg-secondary text-secondary-foreground px-3 py-1 rounded-full font-medium">
                   {restaurant.cuisine_type}
                 </span>
-                <div className="flex items-center gap-1">
+                <button 
+                  onClick={() => setActiveTab('reviews')}
+                  className="flex items-center gap-1 hover:opacity-80 transition-opacity"
+                >
                   <Star size={16} className="text-accent fill-accent" />
                   <span className="font-medium">
                     {Number(restaurant.rating) > 0 ? Number(restaurant.rating).toFixed(1) : 'New'}
                   </span>
-                </div>
+                </button>
               </div>
               <h1 className="font-display text-3xl font-bold text-foreground mb-2">
                 {restaurant.name}
@@ -142,52 +147,90 @@ export default function RestaurantDetail() {
           </div>
         </div>
 
-        {/* Category Tabs */}
-        {categories.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto pb-4 mb-6 scrollbar-hide">
-            {categories.map(category => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                  selectedCategory === category
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
+        {/* Menu/Reviews Tab Toggle */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setActiveTab('menu')}
+            className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${
+              activeTab === 'menu'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+            }`}
+          >
+            Menu
+          </button>
+          <button
+            onClick={() => setActiveTab('reviews')}
+            className={`px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 ${
+              activeTab === 'reviews'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+            }`}
+          >
+            <MessageSquare size={18} />
+            Reviews
+          </button>
+        </div>
+
+        {activeTab === 'menu' && (
+          <>
+            {/* Category Tabs */}
+            {categories.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-4 mb-6 scrollbar-hide">
+                {categories.map(category => (
+                  <button
+                    key={category}
+                    onClick={() => setSelectedCategory(category)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                      selectedCategory === category
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Menu Items */}
+            <div>
+              <h2 className="font-display text-2xl font-bold text-foreground mb-4">
+                {selectedCategory === 'All' ? 'Menu' : selectedCategory}
+              </h2>
+              {filteredItems.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">No menu items available</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredItems.map(item => (
+                    <MenuItem
+                      key={item.id}
+                      id={item.id}
+                      name={item.name}
+                      description={item.description}
+                      price={Number(item.price)}
+                      imageUrl={item.image_url}
+                      category={item.category}
+                      restaurantId={restaurant.id}
+                      restaurantName={restaurant.name}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
         )}
 
-        {/* Menu Items */}
-        <div>
-          <h2 className="font-display text-2xl font-bold text-foreground mb-4">
-            {selectedCategory === 'All' ? 'Menu' : selectedCategory}
-          </h2>
-          {filteredItems.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No menu items available</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredItems.map(item => (
-                <MenuItem
-                  key={item.id}
-                  id={item.id}
-                  name={item.name}
-                  description={item.description}
-                  price={Number(item.price)}
-                  imageUrl={item.image_url}
-                  category={item.category}
-                  restaurantId={restaurant.id}
-                  restaurantName={restaurant.name}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+        {activeTab === 'reviews' && (
+          <div className="card-elevated p-6">
+            <h2 className="font-display text-2xl font-bold text-foreground mb-6">
+              Customer Reviews
+            </h2>
+            <ReviewList restaurantId={restaurant.id} />
+          </div>
+        )}
       </div>
     </div>
   );

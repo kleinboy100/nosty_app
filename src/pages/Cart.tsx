@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { LocationButton } from '@/components/LocationButton';
+import { PaymentMethodSelector } from '@/components/PaymentMethodSelector';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function Cart() {
@@ -23,6 +24,7 @@ export default function Cart() {
   
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [notes, setNotes] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('cash');
   const [loading, setLoading] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
 
@@ -87,16 +89,17 @@ export default function Cart() {
     setLoading(true);
 
     try {
-      // Create order
+      // Create order with payment method
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
           user_id: user.id,
           restaurant_id: restaurantId,
-          total_amount: total,
+          total_amount: total + 25, // Include delivery fee
           delivery_address: deliveryAddress,
           notes: notes || null,
-          status: 'pending'
+          status: 'pending',
+          payment_method: paymentMethod
         })
         .select()
         .single();
@@ -257,6 +260,12 @@ export default function Cart() {
                     rows={3}
                   />
                 </div>
+                
+                {/* Payment Method */}
+                <div className="space-y-2">
+                  <Label>Payment Method</Label>
+                  <PaymentMethodSelector value={paymentMethod} onChange={setPaymentMethod} />
+                </div>
               </div>
 
               <div className="border-t border-border pt-4 space-y-2 mb-6">
@@ -279,7 +288,7 @@ export default function Cart() {
                 onClick={handlePlaceOrder}
                 disabled={loading}
               >
-                {loading ? 'Placing Order...' : 'Place Order'}
+                {loading ? 'Placing Order...' : 'Place Order (Cash on Delivery)'}
               </Button>
             </div>
           </div>
