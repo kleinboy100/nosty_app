@@ -144,6 +144,7 @@ export type Database = {
           delivery_address: string
           id: string
           notes: string | null
+          payment_method: string | null
           restaurant_id: string
           status: string
           total_amount: number
@@ -155,6 +156,7 @@ export type Database = {
           delivery_address: string
           id?: string
           notes?: string | null
+          payment_method?: string | null
           restaurant_id: string
           status?: string
           total_amount: number
@@ -166,6 +168,7 @@ export type Database = {
           delivery_address?: string
           id?: string
           notes?: string | null
+          payment_method?: string | null
           restaurant_id?: string
           status?: string
           total_amount?: number
@@ -262,6 +265,51 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          order_id: string | null
+          rating: number
+          restaurant_id: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          rating: number
+          restaurant_id: string
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          rating?: number
+          restaurant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
