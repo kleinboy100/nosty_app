@@ -106,16 +106,23 @@ export function OrderChat({ orderId, userType, className }: OrderChatProps) {
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !user) return;
+    if (!newMessage.trim() || !user) {
+      console.log('Cannot send: no message or not logged in', { hasMessage: !!newMessage.trim(), hasUser: !!user });
+      return;
+    }
 
-    const { error } = await supabase.from('messages').insert({
+    const messageData = {
       order_id: orderId,
       sender_id: user.id,
       sender_type: userType,
       content: newMessage.trim()
-    });
+    };
 
-    if (!error) {
+    const { error } = await supabase.from('messages').insert(messageData);
+
+    if (error) {
+      console.error('Failed to send message:', error);
+    } else {
       setNewMessage('');
     }
   };
@@ -140,7 +147,7 @@ export function OrderChat({ orderId, userType, className }: OrderChatProps) {
 
       {/* Chat Panel */}
       {isOpen && (
-        <div className="absolute bottom-full right-0 mb-2 w-80 bg-card border rounded-lg shadow-lg z-50">
+        <div className="absolute top-full left-0 mt-2 w-80 bg-card border rounded-lg shadow-lg z-50">
           <div className="p-3 border-b flex justify-between items-center">
             <span className="font-semibold text-sm">Order Chat</span>
             <Button variant="ghost" size="sm" onClick={() => setIsOpen(false)}>
