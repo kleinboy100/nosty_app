@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,37 @@ export function OrderChat({ orderId, userType, className }: OrderChatProps) {
   const [newMessage, setNewMessage] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isOtherTyping, setIsOtherTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  // Setup presence channel for typing indicators
+  useEffect(() => {
+    if (orderId && user) {
+      const presenceChannel = supabase.channel(`typing-${orderId}`, {
+        config: { presence: { key: user.id } }
+      });
+
+      presenceChannel
+        .on('presence', { event: 'sync' }, () => {
+          const state = presenceChannel.presenceState();
+          // Check if other party is typing
+          const otherTyping = Object.entries(state).some(([key, presences]) => {
+            if (key === user.id) return false;
+            return (presences as any[]).some(p => p.typing && p.userType !== userType);
+          });
+          setIsOtherTyping(otherTyping);
+        })
+        .subscribe();
+
+      presenceChannelRef.current = presenceChannel;
+
+      return () => {
+        supabase.removeChannel(presenceChannel);
+      };
+    }
+  }, [orderId, user, userType]);
 
   useEffect(() => {
     if (orderId) {
@@ -64,6 +94,22 @@ export function OrderChat({ orderId, userType, className }: OrderChatProps) {
       };
     }
   }, [orderId, userType]);
+
+  const handleTyping = useCallback(() => {
+    if (presenceChannelRef.current) {
+      presenceChannelRef.current.track({ typing: true, userType });
+      
+      // Clear previous timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      
+      // Stop typing after 2 seconds of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        presenceChannelRef.current?.track({ typing: false, userType });
+      }, 2000);
+    }
+  }, [userType]);
 
   useEffect(() => {
     scrollToBottom();
@@ -178,13 +224,26 @@ export function OrderChat({ orderId, userType, className }: OrderChatProps) {
                 </div>
               ))
             )}
+            {isOtherTyping && (
+              <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                <div className="flex gap-1">
+                  <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+                <span>{userType === 'customer' ? 'Restaurant' : 'Customer'} is typing...</span>
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
 
           <form onSubmit={sendMessage} className="p-3 border-t flex gap-2">
             <Input
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
+              onChange={(e) => {
+                setNewMessage(e.target.value);
+                handleTyping();
+              }}
               placeholder="Type a message..."
               className="flex-1 h-9"
             />

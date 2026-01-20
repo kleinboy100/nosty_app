@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { OrderStatusTracker } from '@/components/OrderStatusTracker';
-import { DeliveryMap } from '@/components/DeliveryMap';
+import { DeliveryETA } from '@/components/DeliveryETA';
 import { OrderChat } from '@/components/OrderChat';
 import { ReviewForm } from '@/components/ReviewForm';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Bell, XCircle, Star, Banknote } from 'lucide-react';
+import { Clock, Bell, XCircle, Star, Banknote } from 'lucide-react';
 import { usePushNotifications, ORDER_STATUS_MESSAGES } from '@/hooks/usePushNotifications';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -143,25 +143,17 @@ export default function OrderDetail() {
           )}
         </div>
 
-        {/* Live Delivery Map */}
+        {/* ETA Tracking */}
         {showMap && (
           <div className="card-elevated p-6 mb-6">
             <div className="flex items-center gap-2 mb-4">
-              <MapPin className="text-primary" size={20} />
-              <h2 className="font-semibold">Live Delivery Tracking</h2>
+              <Clock className="text-primary" size={20} />
+              <h2 className="font-semibold">Estimated Delivery Time</h2>
             </div>
-            <DeliveryMap
-              restaurantAddress={order.restaurants?.address}
-              deliveryAddress={order.delivery_address}
+            <DeliveryETA
               status={order.status}
-              className="h-64 w-full"
+              orderCreatedAt={order.created_at}
             />
-            {order.status === 'out_for_delivery' && (
-              <p className="text-sm text-muted-foreground mt-3 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                Driver is on the way to your location
-              </p>
-            )}
           </div>
         )}
 
