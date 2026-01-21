@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, Minus, Plus, ShoppingBag, ArrowLeft, Bell } from 'lucide-react';
+import { Trash2, Minus, Plus, ShoppingBag, ArrowLeft, Bell, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -27,6 +27,34 @@ export default function Cart() {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [loading, setLoading] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
+  const [onlinePaymentAvailable, setOnlinePaymentAvailable] = useState(false);
+  const [checkingPayment, setCheckingPayment] = useState(true);
+
+  // Check if restaurant has online payment configured
+  useEffect(() => {
+    const checkOnlinePayment = async () => {
+      if (!restaurantId) {
+        setCheckingPayment(false);
+        return;
+      }
+      
+      try {
+        const { data } = await supabase
+          .from('restaurants')
+          .select('yoco_secret_key')
+          .eq('id', restaurantId)
+          .single();
+        
+        setOnlinePaymentAvailable(!!data?.yoco_secret_key);
+      } catch (error) {
+        console.error('Error checking payment availability:', error);
+      } finally {
+        setCheckingPayment(false);
+      }
+    };
+    
+    checkOnlinePayment();
+  }, [restaurantId]);
 
   // Auto-get current location on mount
   useEffect(() => {
@@ -98,7 +126,7 @@ export default function Cart() {
           total_amount: total + 25, // Include delivery fee
           delivery_address: deliveryAddress,
           notes: notes || null,
-          status: 'pending',
+          status: paymentMethod === 'online' ? 'awaiting_payment' : 'pending',
           payment_method: paymentMethod
         })
         .select()
@@ -120,6 +148,37 @@ export default function Cart() {
         .insert(orderItems);
 
       if (itemsError) throw itemsError;
+
+      // If online payment, redirect to Yoco checkout
+      if (paymentMethod === 'online') {
+        const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-yoco-checkout', {
+          body: { 
+            orderId: order.id,
+            successUrl: `${window.location.origin}/orders/${order.id}?payment=success`,
+            cancelUrl: `${window.location.origin}/orders/${order.id}?payment=cancelled`,
+            failureUrl: `${window.location.origin}/orders/${order.id}?payment=failed`,
+          }
+        });
+
+        if (checkoutError || checkoutData?.error) {
+          // Rollback: delete the order if payment fails to initialize
+          await supabase.from('orders').delete().eq('id', order.id);
+          
+          toast({
+            title: "Payment setup failed",
+            description: checkoutData?.error || "Could not initiate online payment. Please try again.",
+            variant: "destructive"
+          });
+          setLoading(false);
+          return;
+        }
+
+        clearCart();
+        
+        // Redirect to Yoco payment page
+        window.location.href = checkoutData.checkoutUrl;
+        return;
+      }
 
       clearCart();
       toast({
@@ -264,7 +323,18 @@ export default function Cart() {
                 {/* Payment Method */}
                 <div className="space-y-2">
                   <Label>Payment Method</Label>
-                  <PaymentMethodSelector value={paymentMethod} onChange={setPaymentMethod} />
+                  {checkingPayment ? (
+                    <div className="flex items-center gap-2 text-muted-foreground py-4">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-sm">Checking payment options...</span>
+                    </div>
+                  ) : (
+                    <PaymentMethodSelector 
+                      value={paymentMethod} 
+                      onChange={setPaymentMethod}
+                      onlinePaymentAvailable={onlinePaymentAvailable}
+                    />
+                  )}
                 </div>
               </div>
 
@@ -286,9 +356,16 @@ export default function Cart() {
               <Button 
                 className="w-full btn-primary h-12"
                 onClick={handlePlaceOrder}
-                disabled={loading}
+                disabled={loading || checkingPayment}
               >
-                {loading ? 'Placing Order...' : 'Place Order (Cash on Delivery)'}
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    {paymentMethod === 'online' ? 'Redirecting to Payment...' : 'Placing Order...'}
+                  </>
+                ) : (
+                  paymentMethod === 'online' ? 'Pay Online Now' : 'Place Order (Cash on Delivery)'
+                )}
               </Button>
             </div>
           </div>
