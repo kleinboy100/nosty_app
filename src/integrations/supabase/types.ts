@@ -185,6 +185,42 @@ export type Database = {
           },
         ]
       }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          order_id: string
+          status: string
+          updated_at: string
+          yoco_checkout_id: string | null
+          yoco_payment_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          order_id: string
+          status?: string
+          updated_at?: string
+          yoco_checkout_id?: string | null
+          yoco_payment_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          order_id?: string
+          status?: string
+          updated_at?: string
+          yoco_checkout_id?: string | null
+          yoco_payment_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
@@ -233,6 +269,8 @@ export type Database = {
           phone: string | null
           rating: number | null
           updated_at: string
+          yoco_public_key: string | null
+          yoco_secret_key: string | null
         }
         Insert: {
           address: string
@@ -248,6 +286,8 @@ export type Database = {
           phone?: string | null
           rating?: number | null
           updated_at?: string
+          yoco_public_key?: string | null
+          yoco_secret_key?: string | null
         }
         Update: {
           address?: string
@@ -263,6 +303,8 @@ export type Database = {
           phone?: string | null
           rating?: number | null
           updated_at?: string
+          yoco_public_key?: string | null
+          yoco_secret_key?: string | null
         }
         Relationships: []
       }
