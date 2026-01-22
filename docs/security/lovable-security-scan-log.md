@@ -1,18 +1,22 @@
 # Lovable Security Checker Log
 
-Lovable provides API key detection and AI-powered security scanning to identify issues before publishing. ([docs.lovable.dev](https://docs.lovable.dev/features/security))
+Lovable provides API key detection and security scanning; we use it as a gate before publishing. ([docs.lovable.dev](https://docs.lovable.dev/features/security))
 
-## How we use it (process)
-1. Run the security checker in the Lovable project dashboard. ([docs.lovable.dev](https://docs.lovable.dev/features/security))
-2. Review every finding and map it to:
-   - Frontend fix (safe public code only), or
-   - Supabase fix (RLS policies), or
-   - Edge Function fix (server-side validation, signature verification, secrets).
-   Lovable’s guidance: frontend code is public; move business logic to Edge Functions; keep RLS simple. ([docs.lovable.dev](https://docs.lovable.dev/tips-tricks/avoiding-security-pitfalls))
-3. Implement fixes promptly.
-4. Re-run the checker after changes and record results.
-5. Document exceptions (if any) with clear rationale.
+## Process
+1) Run security checker in Lovable dashboard. ([docs.lovable.dev](https://docs.lovable.dev/features/security))
+2) Fix findings using Edge Functions + RLS where applicable (frontend is public). ([docs.lovable.dev](https://docs.lovable.dev/tips-tricks/avoiding-security-pitfalls))
+3) Re-run checker after fixes.
+4) Document exceptions (if any) with rationale.
 
+## Findings register
+> Never paste secrets here—redact. ([docs.lovable.dev](https://docs.lovable.dev/features/security))
+
+| Date | Finding | Severity | Area | Root cause | Fix | Evidence | Status | Owner |
+|---|---|---|---|---|---|---|---|---|
+| 2026-01-22 | Payment Webhook Accepts Unverified Requests | Error | Edge Function | No signature verification | Implement Yoco timestamp + HMAC signature verification | PR/commit: ____ | In progress | ____ |
+| 2026-01-22 | Payment API Keys Could Be Stolen | Error | Frontend/Config | Secrets in client or logs | Move to secrets + Edge Functions; rotate keys | PR/commit: ____ | In progress | ____ |
+| 2026-01-22 | Order Creation Lacks Server-Side Input Validation | Error | Orders | Client can tamper with order payload | Add `create-order` Edge Function; compute totals server-side | PR/commit: ____ | Planned | ____ |
+| 2026-01-22 | Restaurant Owner Phone Numbers Exposed to Public Scraping | Error | DB/RLS | Public readable fields | Move to private table + RLS policies | PR/commit: ____ | Planned | ____ |
 ## Cadence
 - During active development: run on every major feature branch before publish.
 - After launch: run before each release + monthly review.
