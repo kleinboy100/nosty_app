@@ -1,4 +1,4 @@
-# <App Name>
+# KasiConnect
 
 ## What this app does
 - One-liner value proposition
