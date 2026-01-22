@@ -1,15 +1,27 @@
 # Security
 
-## Security principles (Lovable + Supabase)
-- Frontend code is public; do not store secrets in code. Use secret storage. ([docs.lovable.dev](https://docs.lovable.dev/features/security))
-- Move business logic to Supabase Edge Functions (treat as API layer). ([docs.lovable.dev](https://docs.lovable.dev/tips-tricks/avoiding-security-pitfalls))
-- Use Supabase Row Level Security (RLS) early and keep it simple. ([docs.lovable.dev](https://docs.lovable.dev/tips-tricks/avoiding-security-pitfalls))
+## Security model (Lovable + Supabase)
+- Golden rule: frontend code is public; do not rely on it for secrets or enforcement. ([docs.lovable.dev](https://docs.lovable.dev/tips-tricks/avoiding-security-pitfalls))
+- Use Edge Functions for validation/integrations and RLS for data access control. ([docs.lovable.dev](https://docs.lovable.dev/tips-tricks/avoiding-security-pitfalls) [supabase.com](https://supabase.com/docs/guides/database/postgres/row-level-security))
 
-## Secrets management
-- Where secrets live (Lovable secrets / Supabase Edge Function secrets).
-- Never expose Yoco secret keys client-side. ([developer.yoco.com](https://developer.yoco.com/docs/checkout-api/authentication))
-- Supabase service_role key bypasses RLS; only use in Edge Functions, never in browser. ([supabase.com](https://supabase.com/docs/guides/functions/secrets))
+## Current high-priority risks & mitigations
+### 1) Unverified payment webhooks
+Mitigation: verify `webhook-id`, `webhook-timestamp`, `webhook-signature` before updating DB. ([developer.yoco.com](https://developer.yoco.com/guides/online-payments/webhooks/verifying-the-events))
 
+### 2) Key leakage (Yoco / service role)
+Mitigation: store secrets in Edge Function secrets; never commit; rotate on suspicion. ([supabase.com](https://supabase.com/docs/guides/functions/secrets) [developer.yoco.com](https://developer.yoco.com/docs/checkout-api/authentication))
+
+### 3) Missing server-side input validation (orders)
+Mitigation: create orders through an Edge Function that validates payload and computes totals from DB, not client values. ([docs.lovable.dev](https://docs.lovable.dev/tips-tricks/avoiding-security-pitfalls))
+
+### 4) Phone numbers scrapeable
+Mitigation: keep phone numbers in private tables protected by RLS; do not expose them in public restaurant listings. ([supabase.com](https://supabase.com/docs/guides/database/postgres/row-level-security))
+
+## Security checker process
+We run Lovable’s security checker before publish and track findings in `docs/security/lovable-security-scan-log.md`. ([docs.lovable.dev](https://docs.lovable.dev/features/security))
+
+## OWASP mapping (awareness)
+Many of the above issues map to OWASP Top 10 categories (e.g., Broken Access Control, Insecure Design). ([owasp.org](https://owasp.org/Top10/2021/))
 ## Webhook security (Yoco)
 We verify authenticity using:
 1) Replay-attack protection: validate `webhook-timestamp` is within 3 minutes. ([developer.yoco.com](https://developer.yoco.com/guides/online-payments/webhooks/verifying-the-events))
