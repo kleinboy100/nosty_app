@@ -1,3 +1,4 @@
+'''mermaid
 flowchart LR
   %% =========================
   %% KasiConnect Takeaways - High-level Architecture
@@ -60,3 +61,4 @@ flowchart LR
   REST -->|Upload verification docs (planned)| STOR
   EF -->|Store metadata + status| DB
   EF -.->|Planned: verify with CIPC| CIPC
+  '''
