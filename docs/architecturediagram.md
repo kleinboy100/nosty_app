@@ -1,64 +1,58 @@
-``` mermaid
-flowchart LR
-  %% =========================
-  %% KasiConnect Takeaways - High-level Architecture
-  %% =========================
-
-  subgraph Clients["Clients (Browser / Mobile Web)"]
-    CUST["Customer UI<br/>(Lovable Frontend)"]
-    REST["Restaurant UI<br/>(Lovable Frontend)"]
-    ADMIN["Admin/Verifier UI<br/>(Lovable Frontend)"]
+``` mermaidflowchart LR
+  subgraph Clients
+    CUST[Customer UI (Lovable)]
+    REST[Restaurant UI (Lovable)]
+    ADMIN[Admin/Verifier UI (Lovable)]
   end
 
-  subgraph Supabase["Supabase Backend"]
-    AUTH["Supabase Auth<br/>(Phone / Google / Email)"]
-    DB["Postgres Database<br/>(Orders, Restaurants, Payments, Reviews, Messages)"]
-    RLS["Row Level Security (RLS)"]
-    RT["Supabase Realtime<br/>(Chat + order progress updates)"]
-    STOR["Supabase Storage<br/>(Planned: ID + Proof of Address uploads)"]
-    EF["Edge Functions (API layer)<br/>create-order, create-yoco-checkout, yoco-webhook,<br/>cod-settlement, verification workflows"]
+  subgraph Supabase
+    AUTH[Supabase Auth (Phone / Google / Email)]
+    DB[(Postgres DB)]
+    RLS[RLS Policies]
+    RT[Realtime (Chat + Order Updates)]
+    STOR[Storage (Planned: ID + Proof of Address)]
+    EF[Edge Functions (API Layer)]
   end
 
-  subgraph External["External Services"]
-    YOCO["Yoco Payments<br/>(Checkout API + Webhooks)"]
-    CIPC["CIPC verification service<br/>(Planned integration)"]
+  subgraph External
+    YOCO[Yoco Checkout API]
+    YWH[Yoco Webhooks]
+    CIPC[CIPC Checks (Planned)]
   end
 
-  %% Auth + general data access
-  CUST -->|Sign in / sign up| AUTH
-  REST -->|Sign in / sign up| AUTH
-  ADMIN -->|Sign in / sign up| AUTH
-
+  %% Auth
+  CUST --> AUTH
+  REST --> AUTH
+  ADMIN --> AUTH
   AUTH --> DB
   DB --> RLS
 
-  %% Core reads (public-ish)
-  CUST -->|Browse/search restaurants & menus| DB
+  %% Discovery (reads)
+  CUST -->|Browse / Search restaurants & menus| DB
 
-  %% Security boundary: write operations go through Edge Functions
-  CUST -->|Place order (COD/Online)| EF
-  REST -->|Approve/Decline + update progress/ETA| EF
-  ADMIN -->|Verify restaurants| EF
-
+  %% Core writes via Edge Functions
+  CUST -->|Place order (COD or Online)| EF
+  REST -->|Approve/Decline; Progress; ETA| EF
+  ADMIN -->|Restaurant verification decisions| EF
   EF --> DB
 
-  %% Realtime
+  %% Realtime updates
   DB <--> RT
   CUST <--> RT
   REST <--> RT
 
-  %% Payments (online)
+  %% Online payments
   EF -->|Create checkout (server-side)| YOCO
-  YOCO -->|Webhook event (POST)| EF
-  EF -->|Verify signature + timestamp then update| DB
+  YWH -->|Webhook event POST| EF
+  EF -->|Verify + update payment/order| DB
 
-  %% COD settlement
-  EF -->|Generate statements / track COD commission balance| DB
-  REST -->|Pay accumulated COD commission by due date| EF
-  EF -->|Enforce restriction/suspension if overdue| DB
+  %% COD commission settlement
+  EF -->|Compute COD commission balance| DB
+  REST -->|Settle COD commission on due date| EF
+  EF -->|Restrict/Suspend if overdue| DB
 
   %% Verification roadmap
-  REST -->|Upload verification docs (planned)| STOR
-  EF -->|Store metadata + status| DB
-  EF -.->|Planned: verify with CIPC| CIPC
+  REST -->|Upload docs (planned)| STOR
+  EF -->|Store verification metadata/status| DB
+  EF -.->|Planned integration| CIPC
   ```
