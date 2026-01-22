@@ -1,0 +1,14 @@
+README.md
+docs/00-introduction.md
+docs/01-architecture.md
+docs/02-environments-and-secrets.md
+docs/03-database-and-rls.md
+docs/04-edge-functions.md
+docs/05-payments-yoco.md
+docs/06-security.md
+docs/07-privacy-and-data-retention.md
+docs/08-operations-runbook.md
+docs/09-testing-and-release.md
+docs/security/lovable-security-scan-log.md
+docs/security/exceptions.md
+docs/adr/0001-record-template.md
