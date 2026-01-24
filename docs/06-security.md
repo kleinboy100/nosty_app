@@ -1,16 +1,25 @@
-# Security
+# Security Documentation
 
-## Security model (Lovable + Supabase)
-- Golden rule: frontend code is public; do not rely on it for secrets or enforcement. ([docs.lovable.dev](https://docs.lovable.dev/tips-tricks/avoiding-security-pitfalls))
-- Use Edge Functions for validation/integrations and RLS for data access control. ([docs.lovable.dev](https://docs.lovable.dev/tips-tricks/avoiding-security-pitfalls) [supabase.com](https://supabase.com/docs/guides/database/postgres/row-level-security))
+## The Security Model
+KasiConnect operates on the principle that the **Frontend is Public**. We do not trust any data coming from the browser regarding prices or payment status.
 
-## Current high-priority risks & mitigations
-### 1) Unverified payment webhooks
-Mitigation: verify `webhook-id`, `webhook-timestamp`, `webhook-signature` before updating DB. ([developer.yoco.com](https://developer.yoco.com/guides/online-payments/webhooks/verifying-the-events))
+## Completed Mitigations (Jan 2026)
 
-### 2) Key leakage (Yoco / service role)
-Mitigation: store secrets in Edge Function secrets; never commit; rotate on suspicion. ([supabase.com](https://supabase.com/docs/guides/functions/secrets) [developer.yoco.com](https://developer.yoco.com/docs/checkout-api/authentication))
+### 1. Order Price Tampering
+- **Risk:** Users could edit the "Total Price" in the browser before clicking buy.
+- **Fix:** Implemented server-side price lookups during the order creation transaction.
 
+### 2. Webhook Spoofing
+- **Risk:** An attacker could send a fake "Success" message to our webhook URL.
+- **Fix:** Implemented HMAC-SHA256 signature verification using `YOCO_WEBHOOK_SECRET`.
+
+### 3. Sensitive Data Exposure
+- **Risk:** Restaurant owner phone numbers could be scraped by bots.
+- **Fix:** Created the `restaurants_public` view to filter out contact details for non-authenticated or unauthorized requests.
+
+### 4. API Key Leakage
+- **Risk:** Yoco Secret Keys visible in the frontend source code.
+- **Fix:** Moved all Yoco interactions to Supabase Edge Functions. Frontend now only interacts with masked RPC functions.
 ### 3) Missing server-side input validation (orders)
 Mitigation: create orders through an Edge Function that validates payload and computes totals from DB, not client values. ([docs.lovable.dev](https://docs.lovable.dev/tips-tricks/avoiding-security-pitfalls))
 
