@@ -132,7 +132,8 @@ export function AddressAutocomplete({
   };
 
   const handleUseCurrentLocation = async () => {
-    if (!navigator.geolocation || !mapboxToken) {
+    if (!navigator.geolocation) {
+      console.error('Geolocation is not supported by this browser');
       return;
     }
 
@@ -143,15 +144,32 @@ export function AddressAutocomplete({
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
-          timeout: 10000
+          timeout: 15000,
+          maximumAge: 0
         });
       });
 
       const { latitude, longitude } = position.coords;
 
-      // Reverse geocode to get address
+      // Wait for token if not yet loaded
+      let token = mapboxToken;
+      if (!token) {
+        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
+        if (!error && data?.token) {
+          token = data.token;
+          setMapboxToken(data.token);
+        } else {
+          console.error('Could not fetch mapbox token');
+          // Fallback: set coordinates only
+          onCoordinatesChange?.({ lat: latitude, lng: longitude });
+          setGettingLocation(false);
+          return;
+        }
+      }
+
+      // Reverse geocode to get address - using broader types for better results
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${mapboxToken}&types=address,place&limit=1`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}&types=address,poi,place,locality,neighborhood&limit=1`
       );
       const data = await response.json();
 
@@ -160,9 +178,31 @@ export function AddressAutocomplete({
         setQuery(address);
         onChange(address);
         onCoordinatesChange?.({ lat: latitude, lng: longitude });
+      } else {
+        // Fallback: try with fewer type restrictions
+        const fallbackResponse = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}&limit=1`
+        );
+        const fallbackData = await fallbackResponse.json();
+        
+        if (fallbackData.features && fallbackData.features.length > 0) {
+          const address = fallbackData.features[0].place_name;
+          setQuery(address);
+          onChange(address);
+          onCoordinatesChange?.({ lat: latitude, lng: longitude });
+        } else {
+          console.error('Could not reverse geocode location');
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting current location:', error);
+      if (error.code === 1) {
+        console.error('Location permission denied');
+      } else if (error.code === 2) {
+        console.error('Location unavailable');
+      } else if (error.code === 3) {
+        console.error('Location request timed out');
+      }
     } finally {
       setGettingLocation(false);
     }
