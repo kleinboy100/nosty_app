@@ -12,6 +12,7 @@ interface AddressAutocompleteProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  showLocationButton?: boolean;
 }
 
 interface Suggestion {
@@ -25,7 +26,8 @@ export function AddressAutocomplete({
   onCoordinatesChange,
   placeholder = "Enter your address",
   disabled = false,
-  className
+  className,
+  showLocationButton = false
 }: AddressAutocompleteProps) {
   const [query, setQuery] = useState(value);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -184,6 +186,30 @@ export function AddressAutocomplete({
           <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground animate-spin" size={18} />
         )}
       </div>
+
+      {/* External "Use current location" button */}
+      {showLocationButton && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleUseCurrentLocation}
+          disabled={gettingLocation || !mapboxToken}
+          className="mt-2 w-full"
+        >
+          {gettingLocation ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              Getting location...
+            </>
+          ) : (
+            <>
+              <Navigation className="w-4 h-4 mr-2" />
+              Use current location
+            </>
+          )}
+        </Button>
+      )}
 
       {showDropdown && (
         <div
