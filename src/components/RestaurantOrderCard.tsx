@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { OrderChat } from './OrderChat';
-import { Check, X, ChefHat, Package, Truck, Home, Bell } from 'lucide-react';
+import { Check, X, ChefHat, Package, Truck, Home, Bell, CreditCard, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface OrderItem {
@@ -19,6 +19,8 @@ interface Order {
   notes?: string;
   created_at: string;
   order_items?: OrderItem[];
+  payment_method?: string;
+  payment_confirmed?: boolean;
 }
 
 interface RestaurantOrderCardProps {
@@ -128,6 +130,27 @@ export function RestaurantOrderCard({ order, onUpdateStatus, isNew }: Restaurant
         </p>
       )}
 
+      {/* Payment Warning for confirmed orders */}
+      {order.status === 'confirmed' && !order.payment_confirmed && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3 flex items-center gap-2">
+          <AlertCircle className="text-amber-600 shrink-0" size={18} />
+          <div>
+            <p className="text-sm font-medium text-amber-800">Awaiting Payment</p>
+            <p className="text-xs text-amber-700">Customer must select a payment method before you can start preparing.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Payment confirmed indicator */}
+      {order.payment_confirmed && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-2 mb-3 flex items-center gap-2">
+          <CreditCard className="text-green-600" size={16} />
+          <p className="text-sm text-green-800">
+            Payment: {order.payment_method === 'cash' ? 'Cash on Delivery' : 'Paid Online'}
+          </p>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex items-center justify-between gap-2 pt-2 border-t">
         <div className="flex gap-2">
@@ -162,7 +185,7 @@ export function RestaurantOrderCard({ order, onUpdateStatus, isNew }: Restaurant
               size="sm"
               className={cn("text-white", nextAction.color)}
               onClick={() => handleAction(nextAction.status)}
-              disabled={loading}
+              disabled={loading || (order.status === 'confirmed' && !order.payment_confirmed)}
             >
               <nextAction.icon size={16} className="mr-1" />
               {nextAction.label}

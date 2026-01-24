@@ -227,6 +227,7 @@ export default function Cart() {
                     onChange={setDeliveryAddress}
                     onCoordinatesChange={setDeliveryCoords}
                     placeholder="Search for your address"
+                    showLocationButton={true}
                   />
                 </div>
                 <div className="space-y-2">
