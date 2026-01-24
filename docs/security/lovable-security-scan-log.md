@@ -1,20 +1,13 @@
 # Lovable Security Checker Log
 
-Lovable provides API key detection and security scanning; we use it as a gate before publishing. ([docs.lovable.dev](https://docs.lovable.dev/features/security))
+| Date | Finding | Severity | Status | Fix Action |
+|---|---|---|---|---|
+| 2026-01-24 | Payment Webhook Unverified | Error | **FIXED** | HMAC signature verification implemented in Edge Functions. |
+| 2026-01-24 | Payment API Keys Exposed | Error | **FIXED** | Keys moved to Supabase Secrets; UI uses RPC masking. |
+| 2026-01-24 | Client-Side Order Validation | Error | **FIXED** | Created `create_validated_order` SQL function. |
+| 2026-01-24 | Public Phone Data Exposure | Error | **FIXED** | Implemented `restaurants_public` view. |
 
-## Process
-1) Run security checker in Lovable dashboard. ([docs.lovable.dev](https://docs.lovable.dev/features/security))
-2) Fix findings using Edge Functions + RLS where applicable (frontend is public). ([docs.lovable.dev](https://docs.lovable.dev/tips-tricks/avoiding-security-pitfalls))
-3) Re-run checker after fixes.
-4) Document exceptions (if any) with rationale.
-
-## Findings register
-> Never paste secrets here—redact. ([docs.lovable.dev](https://docs.lovable.dev/features/security))
-
-| Date | Finding | Severity | Area | Root cause | Fix | Evidence | Status | Owner |
-|---|---|---|---|---|---|---|---|---|
-| 2026-01-22 | Payment Webhook Accepts Unverified Requests | Error | Edge Function | No signature verification | Implement Yoco timestamp + HMAC signature verification | PR/commit: ____ | In progress | ____ |
-| 2026-01-22 | Payment API Keys Could Be Stolen | Error | Frontend/Config | Secrets in client or logs | Move to secrets + Edge Functions; rotate keys | PR/commit: ____ | In progress | ____ |
+**Last Scan Status:** All Error-level issues resolved.| 2026-01-22 | Payment API Keys Could Be Stolen | Error | Frontend/Config | Secrets in client or logs | Move to secrets + Edge Functions; rotate keys | PR/commit: ____ | In progress | ____ |
 | 2026-01-22 | Order Creation Lacks Server-Side Input Validation | Error | Orders | Client can tamper with order payload | Add `create-order` Edge Function; compute totals server-side | PR/commit: ____ | Planned | ____ |
 | 2026-01-22 | Restaurant Owner Phone Numbers Exposed to Public Scraping | Error | DB/RLS | Public readable fields | Move to private table + RLS policies | PR/commit: ____ | Planned | ____ |
 ## Cadence
