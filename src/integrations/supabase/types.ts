@@ -56,6 +56,13 @@ export type Database = {
             referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "menu_items_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       messages: {
@@ -181,6 +188,13 @@ export type Database = {
             columns: ["restaurant_id"]
             isOneToOne: false
             referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
             referencedColumns: ["id"]
           },
         ]
@@ -351,14 +365,82 @@ export type Database = {
             referencedRelation: "restaurants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "reviews_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      restaurants_public: {
+        Row: {
+          accepts_online_payment: boolean | null
+          address: string | null
+          average_prep_time: number | null
+          created_at: string | null
+          cuisine_type: string | null
+          description: string | null
+          id: string | null
+          image_url: string | null
+          is_active: boolean | null
+          name: string | null
+          rating: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          accepts_online_payment?: never
+          address?: string | null
+          average_prep_time?: number | null
+          created_at?: string | null
+          cuisine_type?: string | null
+          description?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          rating?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          accepts_online_payment?: never
+          address?: string | null
+          average_prep_time?: number | null
+          created_at?: string | null
+          cuisine_type?: string | null
+          description?: string | null
+          id?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          rating?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      create_validated_order: {
+        Args: {
+          p_delivery_address: string
+          p_items: Json
+          p_notes: string
+          p_payment_method: string
+          p_restaurant_id: string
+        }
+        Returns: string
+      }
+      owner_has_payment_keys: {
+        Args: { p_restaurant_id: string }
+        Returns: boolean
+      }
+      restaurant_has_online_payment: {
+        Args: { p_restaurant_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
