@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Search, ChefHat } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { RestaurantCard } from '@/components/RestaurantCard';
+import { HeroSlideshow } from '@/components/HeroSlideshow';
 import { supabase } from '@/integrations/supabase/client';
-import heroImage from '@/assets/hero-food.jpg';
-import { Link } from 'react-router-dom';
 
 interface Restaurant {
   id: string;
@@ -54,17 +52,10 @@ export default function Index() {
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
+      {/* Hero Section with Slideshow */}
       <section className="relative h-[400px] md:h-[500px] overflow-hidden">
-        <div className="absolute inset-0">
-          <img
-            src={heroImage}
-            alt="Delicious food"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 to-foreground/40" />
-        </div>
-        <div className="relative container mx-auto px-4 h-full flex flex-col justify-center">
+        <HeroSlideshow />
+        <div className="relative container mx-auto px-4 h-full flex flex-col justify-center z-10">
           <div className="max-w-xl">
             <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-card mb-4 animate-fade-in">
               Mzansi flavors,
@@ -89,24 +80,6 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Restaurant Owner CTA */}
-      <section className="bg-secondary/50 py-6">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <ChefHat className="text-primary" size={32} />
-              <div>
-                <p className="font-display font-semibold text-foreground">Own a takeaway or restaurant?</p>
-                <p className="text-muted-foreground text-sm">Join KasiConnect and reach more customers in your area</p>
-              </div>
-            </div>
-            <Link to="/restaurant/register">
-              <Button className="btn-primary">Register Your Takeaway</Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
       {/* Cuisine Filters */}
       <section className="py-6 border-b border-border">
         <div className="container mx-auto px-4">
@@ -127,8 +100,6 @@ export default function Index() {
           </div>
         </div>
       </section>
-
-      {/* Restaurants Grid */}
       <section className="py-8">
         <div className="container mx-auto px-4">
           <h2 className="font-display text-2xl font-bold text-foreground mb-6">
