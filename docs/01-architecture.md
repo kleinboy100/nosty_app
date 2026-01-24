@@ -1,12 +1,30 @@
 # Architecture
 
 ## High-level components
-- **Client (Lovable UI):** Customer mode + Restaurant mode. Frontend code is public. ([docs.lovable.dev](https://docs.lovable.dev/tips-tricks/avoiding-security-pitfalls))
-- **Supabase Auth:** Phone login + Google + Email. ([supabase.com](https://supabase.com/docs/guides/auth/phone-login) [supabase.com](https://supabase.com/docs/guides/auth/social-login/auth-google))
-- **Supabase Postgres + RLS:** Source of truth for users, restaurants, menus, orders, payments, reviews, and messaging. ([supabase.com](https://supabase.com/docs/guides/database/postgres/row-level-security))
-- **Supabase Realtime:** Real-time chat and order progress updates. ([supabase.com](https://supabase.com/docs/guides/realtime))
-- **Supabase Edge Functions:** “API layer” for sensitive operations (create order, create checkout, webhook handling). ([supabase.com](https://supabase.com/docs/guides/functions) [docs.lovable.dev](https://docs.lovable.dev/tips-tricks/avoiding-security-pitfalls))
-- **Yoco:** Checkout creation (server-side) + webhooks for payment confirmation. ([developer.yoco.com](https://developer.yoco.com/docs/checkout-api/authentication) [developer.yoco.com](https://developer.yoco.com/guides/online-payments/webhooks/listen-for-events))
+- **Client (Lovable UI):** Mobile-first interface utilizing a Bottom Navigation bar.
+- **Supabase Edge Functions:** Acts as the secure "API layer" for Yoco integrations and signature verification.
+- **Database Logic:** Custom SQL functions handle order validation to ensure data integrity.
+
+
+
+## Key flows (Implemented)
+### Secure Order Flow
+1. **Submission:** Customer submits order items from the cart.
+2. **Validation:** The database function `create_validated_order` ignores client-side prices and recalculates the total directly from the `menu_items` table.
+3. **Creation:** Order is created with status `awaiting_payment` (for online) or `pending` (for COD).
+
+### Payment Verification Flow
+1. **Webhook:** Yoco sends a `payment.succeeded` event.
+2. **Verification:** Edge Function `yoco-webhook` computes an HMAC-SHA256 signature using the `YOCO_WEBHOOK_SECRET`.
+3. **Update:** Only if the signature matches, the order status updates. This prevents "fake" payment successes from unauthorized sources.
+
+## Mobile Navigation Strategy
+The app uses a persistent **BottomNav** component on mobile devices to improve reachability. It includes:
+- Home (Discovery)
+- Orders (Tracking)
+- Cart (with real-time item badge)
+- Dashboard (for Restaurant Owners)
+- Profile/Auth- **Yoco:** Checkout creation (server-side) + webhooks for payment confirmation. ([developer.yoco.com](https://developer.yoco.com/docs/checkout-api/authentication) [developer.yoco.com](https://developer.yoco.com/guides/online-payments/webhooks/listen-for-events))
 
 ## Key flows
 ### Order flow (COD)
