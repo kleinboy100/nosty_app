@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { MenuItemForm, MenuItemData } from '@/components/MenuItemForm';
 import { DocumentUpload } from '@/components/DocumentUpload';
+import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { ChevronLeft, ChevronRight, Store, UtensilsCrossed, Check, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -40,6 +41,7 @@ export default function RestaurantRegister() {
   const [idDocument, setIdDocument] = useState<File | null>(null);
   const [selfiePhoto, setSelfiePhoto] = useState<File | null>(null);
   const [proofOfAddress, setProofOfAddress] = useState<File | null>(null);
+  const [addressCoords, setAddressCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   const validateStep1 = () => {
     if (!form.name || !form.cuisine_type || !form.address) {
@@ -119,7 +121,7 @@ export default function RestaurantRegister() {
         uploadDocument(proofOfAddress!, `${userId}/proof-of-address-${timestamp}`)
       ]);
     
-      // Create restaurant
+      // Create restaurant with coordinates if available
       const { data: restaurant, error: restaurantError } = await supabase
         .from('restaurants')
         .insert({ 
@@ -128,7 +130,9 @@ export default function RestaurantRegister() {
           cuisine_type: form.cuisine_type,
           address: form.address,
           phone: form.phone,
-          owner_id: user.id 
+          owner_id: user.id,
+          latitude: addressCoords?.lat || null,
+          longitude: addressCoords?.lng || null
         })
         .select()
         .single();
@@ -242,11 +246,11 @@ export default function RestaurantRegister() {
               </div>
               <div>
                 <Label>Address *</Label>
-                <Input
-                  required
+                <AddressAutocomplete
                   value={form.address}
-                  onChange={e => setForm({ ...form, address: e.target.value })}
-                  placeholder="e.g. 123 Main Rd, Soweto"
+                  onChange={(address) => setForm({ ...form, address })}
+                  onCoordinatesChange={setAddressCoords}
+                  placeholder="Search for your address"
                 />
               </div>
               <div>

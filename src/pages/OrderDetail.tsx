@@ -1,24 +1,55 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { OrderStatusTracker } from '@/components/OrderStatusTracker';
 import { DeliveryETA } from '@/components/DeliveryETA';
 import { OrderChat } from '@/components/OrderChat';
 import { ReviewForm } from '@/components/ReviewForm';
+import { PaymentMethodSelector } from '@/components/PaymentMethodSelector';
 import { supabase } from '@/integrations/supabase/client';
-import { Clock, Bell, XCircle, Star, Banknote } from 'lucide-react';
+import { Clock, Bell, XCircle, Star, Banknote, CreditCard, Loader2 } from 'lucide-react';
 import { usePushNotifications, ORDER_STATUS_MESSAGES } from '@/hooks/usePushNotifications';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 export default function OrderDetail() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [order, setOrder] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
   const [hasReviewed, setHasReviewed] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<string>('cash');
+  const [onlinePaymentAvailable, setOnlinePaymentAvailable] = useState(false);
+  const [checkingPayment, setCheckingPayment] = useState(true);
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
   const { permission, requestPermission, showNotification, supported } = usePushNotifications();
   const previousStatus = useRef<string | null>(null);
+
+  // Handle payment return messages
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment');
+    if (paymentStatus === 'success') {
+      toast({
+        title: "Payment successful!",
+        description: "Your order is being processed."
+      });
+    } else if (paymentStatus === 'cancelled') {
+      toast({
+        title: "Payment cancelled",
+        description: "You can try again or choose cash on delivery.",
+        variant: "destructive"
+      });
+    } else if (paymentStatus === 'failed') {
+      toast({
+        title: "Payment failed",
+        description: "Please try again or choose a different payment method.",
+        variant: "destructive"
+      });
+    }
+  }, [searchParams, toast]);
 
   useEffect(() => {
     if (id) {
@@ -42,15 +73,38 @@ export default function OrderDetail() {
     }
   }, [id, showNotification]);
 
+  // Check online payment availability when order loads
+  useEffect(() => {
+    if (order?.restaurant_id) {
+      checkOnlinePayment();
+    }
+  }, [order?.restaurant_id]);
+
   const fetchOrder = async () => {
     const [orderRes, itemsRes] = await Promise.all([
-      supabase.from('orders').select('*, restaurants(name, address)').eq('id', id).single(),
+      supabase.from('orders').select('*, restaurants(name, address, latitude, longitude)').eq('id', id).single(),
       supabase.from('order_items').select('*').eq('order_id', id)
     ]);
     setOrder(orderRes.data);
     setItems(itemsRes.data || []);
     if (orderRes.data) {
       previousStatus.current = orderRes.data.status;
+      setPaymentMethod(orderRes.data.payment_method || 'cash');
+    }
+  };
+
+  const checkOnlinePayment = async () => {
+    if (!order?.restaurant_id) return;
+    
+    setCheckingPayment(true);
+    try {
+      const { data: hasPayment } = await supabase
+        .rpc('restaurant_has_online_payment', { p_restaurant_id: order.restaurant_id });
+      setOnlinePaymentAvailable(!!hasPayment);
+    } catch (error) {
+      console.error('Error checking payment availability:', error);
+    } finally {
+      setCheckingPayment(false);
     }
   };
 
@@ -72,10 +126,80 @@ export default function OrderDetail() {
     setShowReviewForm(false);
   };
 
+  const handleConfirmPayment = async () => {
+    if (!order) return;
+
+    setConfirmingPayment(true);
+
+    try {
+      if (paymentMethod === 'online') {
+        // Redirect to Yoco checkout
+        const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-yoco-checkout', {
+          body: { 
+            orderId: order.id,
+            successUrl: `${window.location.origin}/orders/${order.id}?payment=success`,
+            cancelUrl: `${window.location.origin}/orders/${order.id}?payment=cancelled`,
+            failureUrl: `${window.location.origin}/orders/${order.id}?payment=failed`,
+          }
+        });
+
+        if (checkoutError || checkoutData?.error) {
+          toast({
+            title: "Payment setup failed",
+            description: checkoutData?.error || "Could not initiate online payment. Please try again.",
+            variant: "destructive"
+          });
+          setConfirmingPayment(false);
+          return;
+        }
+
+        // Redirect to Yoco payment page
+        window.location.href = checkoutData.checkoutUrl;
+        return;
+      } else {
+        // Cash on delivery - update payment method and mark as confirmed
+        const { error } = await supabase
+          .from('orders')
+          .update({ 
+            payment_method: 'cash',
+            payment_confirmed: true
+          })
+          .eq('id', order.id);
+
+        if (error) {
+          toast({
+            title: "Error",
+            description: "Failed to confirm payment method. Please try again.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Payment method confirmed",
+            description: "You'll pay cash when your order arrives."
+          });
+          // Refresh order data
+          fetchOrder();
+        }
+      }
+    } catch (error) {
+      console.error('Error confirming payment:', error);
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setConfirmingPayment(false);
+    }
+  };
+
   if (!order) return <div className="min-h-screen flex items-center justify-center"><div className="animate-pulse">Loading...</div></div>;
 
   const showMap = ['confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(order.status);
   const canReview = order.status === 'delivered' && !hasReviewed;
+  
+  // Show payment selection after restaurant confirms (status = 'confirmed') and payment not yet confirmed
+  const showPaymentSelection = order.status === 'confirmed' && !order.payment_confirmed;
 
   return (
     <div className="min-h-screen py-8">
@@ -112,7 +236,14 @@ export default function OrderDetail() {
               </p>
             </div>
           )}
-          {order.status === 'confirmed' && (
+          {order.status === 'awaiting_payment' && (
+            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                💳 Waiting for payment confirmation...
+              </p>
+            </div>
+          )}
+          {order.status === 'confirmed' && !showPaymentSelection && (
             <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
               <p className="text-sm text-blue-800">
                 ✅ Order confirmed! The restaurant will start preparing soon.
@@ -143,6 +274,51 @@ export default function OrderDetail() {
           )}
         </div>
 
+        {/* Payment Selection - shown after restaurant confirms */}
+        {showPaymentSelection && (
+          <div className="card-elevated p-6 mb-6 border-2 border-primary">
+            <div className="flex items-center gap-2 mb-4">
+              <CreditCard className="text-primary" size={20} />
+              <h2 className="font-semibold">Select Payment Method</h2>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Great news! The restaurant has confirmed your order. Please select how you'd like to pay.
+            </p>
+            
+            {checkingPayment ? (
+              <div className="flex items-center gap-2 text-muted-foreground py-4">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm">Checking payment options...</span>
+              </div>
+            ) : (
+              <>
+                <PaymentMethodSelector 
+                  value={paymentMethod} 
+                  onChange={setPaymentMethod}
+                  onlinePaymentAvailable={onlinePaymentAvailable}
+                />
+                
+                <Button 
+                  className="w-full mt-4 btn-primary h-12"
+                  onClick={handleConfirmPayment}
+                  disabled={confirmingPayment}
+                >
+                  {confirmingPayment ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Processing...
+                    </>
+                  ) : paymentMethod === 'online' ? (
+                    'Pay Now'
+                  ) : (
+                    'Confirm Cash on Delivery'
+                  )}
+                </Button>
+              </>
+            )}
+          </div>
+        )}
+
         {/* ETA Tracking */}
         {showMap && (
           <div className="card-elevated p-6 mb-6">
@@ -153,6 +329,12 @@ export default function OrderDetail() {
             <DeliveryETA
               status={order.status}
               orderCreatedAt={order.created_at}
+              restaurantAddress={order.restaurants?.address}
+              customerAddress={order.delivery_address}
+              restaurantCoords={order.restaurants?.latitude && order.restaurants?.longitude ? {
+                lat: Number(order.restaurants.latitude),
+                lng: Number(order.restaurants.longitude)
+              } : undefined}
             />
           </div>
         )}
@@ -207,7 +389,7 @@ export default function OrderDetail() {
             <p className="text-sm text-muted-foreground">Delivery: {order.delivery_address}</p>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Banknote size={16} />
-              <span>Payment: {order.payment_method === 'cash' ? 'Cash on Delivery' : order.payment_method}</span>
+              <span>Payment: {order.payment_confirmed ? (order.payment_method === 'cash' ? 'Cash on Delivery' : 'Paid Online') : 'Pending selection'}</span>
             </div>
           </div>
         </div>

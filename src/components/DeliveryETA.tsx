@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Clock, CheckCircle2, Truck, ChefHat, Package } from 'lucide-react';
+import { Clock, CheckCircle2, Truck, ChefHat, Package, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DeliveryETAProps {
   status: string;
   orderCreatedAt: string;
+  restaurantAddress?: string;
+  customerAddress?: string;
+  restaurantCoords?: { lat: number; lng: number };
+  customerCoords?: { lat: number; lng: number };
   className?: string;
 }
 
@@ -13,14 +18,55 @@ const STATUS_DURATIONS: Record<string, number> = {
   confirmed: 5,      // 5 min to start preparing
   preparing: 20,     // 20 min to prepare food
   ready: 5,          // 5 min for driver pickup
-  out_for_delivery: 15, // 15 min delivery time
 };
 
 const STATUS_ORDER = ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered'];
 
-export function DeliveryETA({ status, orderCreatedAt, className }: DeliveryETAProps) {
+export function DeliveryETA({ 
+  status, 
+  orderCreatedAt, 
+  restaurantAddress,
+  customerAddress,
+  restaurantCoords,
+  customerCoords,
+  className 
+}: DeliveryETAProps) {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [etaTime, setEtaTime] = useState<string>('');
+  const [deliveryDuration, setDeliveryDuration] = useState<number>(15); // Default 15 min
+  const [loadingDistance, setLoadingDistance] = useState(false);
+  const [distanceKm, setDistanceKm] = useState<number | null>(null);
+
+  // Fetch actual delivery duration based on distance
+  useEffect(() => {
+    const calculateDeliveryTime = async () => {
+      if (!restaurantAddress || !customerAddress) return;
+      
+      setLoadingDistance(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('calculate-distance', {
+          body: {
+            restaurantAddress,
+            customerAddress,
+            restaurantCoords,
+            customerCoords
+          }
+        });
+
+        if (!error && data?.durationMinutes) {
+          setDeliveryDuration(data.durationMinutes);
+          setDistanceKm(data.distanceKm);
+          console.log('Distance calculated:', data);
+        }
+      } catch (err) {
+        console.error('Error calculating distance:', err);
+      } finally {
+        setLoadingDistance(false);
+      }
+    };
+
+    calculateDeliveryTime();
+  }, [restaurantAddress, customerAddress, restaurantCoords, customerCoords]);
 
   useEffect(() => {
     const calculateETA = () => {
@@ -33,11 +79,16 @@ export function DeliveryETA({ status, orderCreatedAt, className }: DeliveryETAPr
       let totalMinutes = 0;
       
       for (let i = currentStatusIndex; i < STATUS_ORDER.length - 1; i++) {
-        totalMinutes += STATUS_DURATIONS[STATUS_ORDER[i]] || 0;
+        const statusKey = STATUS_ORDER[i];
+        if (statusKey === 'out_for_delivery') {
+          totalMinutes += deliveryDuration;
+        } else {
+          totalMinutes += STATUS_DURATIONS[statusKey] || 0;
+        }
       }
 
       // Subtract elapsed time in current status (rough estimate)
-      const adjustedMinutes = Math.max(0, totalMinutes - (elapsedMinutes % 10));
+      const adjustedMinutes = Math.max(0, totalMinutes - Math.min(elapsedMinutes, 5));
       setTimeRemaining(Math.ceil(adjustedMinutes));
 
       // Calculate ETA time
@@ -49,7 +100,7 @@ export function DeliveryETA({ status, orderCreatedAt, className }: DeliveryETAPr
     const interval = setInterval(calculateETA, 30000); // Update every 30 seconds
 
     return () => clearInterval(interval);
-  }, [status, orderCreatedAt]);
+  }, [status, orderCreatedAt, deliveryDuration]);
 
   const getStatusIcon = () => {
     switch (status) {
@@ -105,6 +156,9 @@ export function DeliveryETA({ status, orderCreatedAt, className }: DeliveryETAPr
             <p className="text-sm text-muted-foreground">Estimated arrival</p>
           </div>
         </div>
+        {loadingDistance && (
+          <Loader2 className="text-muted-foreground animate-spin" size={20} />
+        )}
       </div>
 
       <div className="bg-background rounded-lg p-4 flex items-center justify-between">
@@ -118,6 +172,15 @@ export function DeliveryETA({ status, orderCreatedAt, className }: DeliveryETAPr
           <p className="text-sm text-muted-foreground">arrival time</p>
         </div>
       </div>
+
+      {/* Distance info */}
+      {distanceKm !== null && (
+        <div className="mt-3 text-center">
+          <p className="text-xs text-muted-foreground">
+            📍 {distanceKm} km away • ~{deliveryDuration} min drive
+          </p>
+        </div>
+      )}
 
       {/* Progress bar */}
       <div className="mt-4">

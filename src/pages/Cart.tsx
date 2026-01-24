@@ -2,16 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trash2, Minus, Plus, ShoppingBag, ArrowLeft, Bell, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
-import { useGeolocation } from '@/hooks/useGeolocation';
-import { LocationButton } from '@/components/LocationButton';
-import { PaymentMethodSelector } from '@/components/PaymentMethodSelector';
+import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function Cart() {
@@ -20,51 +17,11 @@ export default function Cart() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { permission, requestPermission, supported } = usePushNotifications();
-  const { getCurrentLocation } = useGeolocation();
   
   const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [notes, setNotes] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('cash');
   const [loading, setLoading] = useState(false);
-  const [gettingLocation, setGettingLocation] = useState(false);
-  const [onlinePaymentAvailable, setOnlinePaymentAvailable] = useState(false);
-  const [checkingPayment, setCheckingPayment] = useState(true);
-
-  // Check if restaurant has online payment configured
-  useEffect(() => {
-    const checkOnlinePayment = async () => {
-      if (!restaurantId) {
-        setCheckingPayment(false);
-        return;
-      }
-      
-      try {
-        // Use server-side function to check payment status without exposing secrets
-        const { data: hasPayment } = await supabase
-          .rpc('restaurant_has_online_payment', { p_restaurant_id: restaurantId });
-        setOnlinePaymentAvailable(!!hasPayment);
-      } catch (error) {
-        console.error('Error checking payment availability:', error);
-      } finally {
-        setCheckingPayment(false);
-      }
-    };
-    
-    checkOnlinePayment();
-  }, [restaurantId]);
-
-  // Auto-get current location on mount
-  useEffect(() => {
-    const getLocation = async () => {
-      setGettingLocation(true);
-      const address = await getCurrentLocation();
-      if (address) {
-        setDeliveryAddress(address);
-      }
-      setGettingLocation(false);
-    };
-    getLocation();
-  }, []);
 
   const handleEnableNotifications = async () => {
     const granted = await requestPermission();
@@ -114,16 +71,15 @@ export default function Cart() {
     setLoading(true);
 
     try {
-      // Use server-side validated order creation to prevent price manipulation
+      // Create order with pending status - payment method will be selected after restaurant approval
       const { data: orderId, error: orderError } = await supabase.rpc('create_validated_order', {
         p_restaurant_id: restaurantId,
         p_delivery_address: deliveryAddress,
         p_notes: notes || null,
-        p_payment_method: paymentMethod,
+        p_payment_method: 'cash', // Default to cash, will be updated after approval
         p_items: items.map(item => ({
           menu_item_id: item.menuItemId,
           quantity: item.quantity
-          // No prices sent - server validates from menu_items table
         }))
       });
 
@@ -148,38 +104,10 @@ export default function Cart() {
         return;
       }
 
-      // If online payment, redirect to Yoco checkout
-      if (paymentMethod === 'online') {
-        const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-yoco-checkout', {
-          body: { 
-            orderId: orderId,
-            successUrl: `${window.location.origin}/orders/${orderId}?payment=success`,
-            cancelUrl: `${window.location.origin}/orders/${orderId}?payment=cancelled`,
-            failureUrl: `${window.location.origin}/orders/${orderId}?payment=failed`,
-          }
-        });
-
-        if (checkoutError || checkoutData?.error) {
-          toast({
-            title: "Payment setup failed",
-            description: checkoutData?.error || "Could not initiate online payment. Please try again.",
-            variant: "destructive"
-          });
-          setLoading(false);
-          return;
-        }
-
-        clearCart();
-        
-        // Redirect to Yoco payment page
-        window.location.href = checkoutData.checkoutUrl;
-        return;
-      }
-
       clearCart();
       toast({
-        title: "Order placed!",
-        description: "Your order has been submitted successfully."
+        title: "Order submitted!",
+        description: "Waiting for the restaurant to confirm your order."
       });
       navigate(`/orders/${orderId}`);
     } catch (error) {
@@ -293,16 +221,12 @@ export default function Cart() {
 
               <div className="space-y-4 mb-6">
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="address">Delivery Address *</Label>
-                    <LocationButton onLocationReceived={setDeliveryAddress} />
-                  </div>
-                  <Input
-                    id="address"
-                    placeholder={gettingLocation ? "Getting your location..." : "Enter your full address"}
+                  <Label>Delivery Address *</Label>
+                  <AddressAutocomplete
                     value={deliveryAddress}
-                    onChange={(e) => setDeliveryAddress(e.target.value)}
-                    disabled={gettingLocation}
+                    onChange={setDeliveryAddress}
+                    onCoordinatesChange={setDeliveryCoords}
+                    placeholder="Search for your address"
                   />
                 </div>
                 <div className="space-y-2">
@@ -315,22 +239,12 @@ export default function Cart() {
                     rows={3}
                   />
                 </div>
-                
-                {/* Payment Method */}
-                <div className="space-y-2">
-                  <Label>Payment Method</Label>
-                  {checkingPayment ? (
-                    <div className="flex items-center gap-2 text-muted-foreground py-4">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-sm">Checking payment options...</span>
-                    </div>
-                  ) : (
-                    <PaymentMethodSelector 
-                      value={paymentMethod} 
-                      onChange={setPaymentMethod}
-                      onlinePaymentAvailable={onlinePaymentAvailable}
-                    />
-                  )}
+
+                {/* Info about payment */}
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <p className="text-sm text-muted-foreground">
+                    💡 You'll choose your payment method after the restaurant confirms your order.
+                  </p>
                 </div>
               </div>
 
@@ -352,15 +266,15 @@ export default function Cart() {
               <Button 
                 className="w-full btn-primary h-12"
                 onClick={handlePlaceOrder}
-                disabled={loading || checkingPayment}
+                disabled={loading}
               >
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    {paymentMethod === 'online' ? 'Redirecting to Payment...' : 'Placing Order...'}
+                    Submitting Order...
                   </>
                 ) : (
-                  paymentMethod === 'online' ? 'Pay Online Now' : 'Place Order (Cash on Delivery)'
+                  'Place Order'
                 )}
               </Button>
             </div>

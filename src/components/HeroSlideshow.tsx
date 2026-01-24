@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -32,36 +32,40 @@ const slides = [
 
 export function HeroSlideshow() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const startAutoPlay = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    intervalRef.current = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 5000);
+  }, []);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      goToNext();
-    }, 5000);
+    startAutoPlay();
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [startAutoPlay]);
 
-    return () => clearInterval(timer);
-  }, [currentSlide]);
-
-  const goToNext = () => {
-    if (isTransitioning) return;
-    setIsTransitioning(true);
+  const goToNext = useCallback(() => {
     setCurrentSlide((prev) => (prev + 1) % slides.length);
-    setTimeout(() => setIsTransitioning(false), 500);
-  };
+    startAutoPlay(); // Reset timer on manual navigation
+  }, [startAutoPlay]);
 
-  const goToPrev = () => {
-    if (isTransitioning) return;
-    setIsTransitioning(true);
+  const goToPrev = useCallback(() => {
     setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
-    setTimeout(() => setIsTransitioning(false), 500);
-  };
+    startAutoPlay(); // Reset timer on manual navigation
+  }, [startAutoPlay]);
 
-  const goToSlide = (index: number) => {
-    if (isTransitioning || index === currentSlide) return;
-    setIsTransitioning(true);
+  const goToSlide = useCallback((index: number) => {
     setCurrentSlide(index);
-    setTimeout(() => setIsTransitioning(false), 500);
-  };
+    startAutoPlay(); // Reset timer on manual navigation
+  }, [startAutoPlay]);
 
   return (
     <div className="absolute inset-0 overflow-hidden">
@@ -70,10 +74,10 @@ export function HeroSlideshow() {
         <div
           key={index}
           className={cn(
-            "absolute inset-0 transition-all duration-500 ease-in-out",
+            "absolute inset-0 transition-opacity duration-500 ease-in-out",
             index === currentSlide 
-              ? "opacity-100 scale-100" 
-              : "opacity-0 scale-105"
+              ? "opacity-100 z-0" 
+              : "opacity-0 z-0"
           )}
         >
           <img
@@ -81,37 +85,54 @@ export function HeroSlideshow() {
             alt={slide.title}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 to-foreground/40" />
         </div>
       ))}
 
-      {/* Navigation Arrows */}
+      {/* Overlay - pointer-events-none so it doesn't block clicks */}
+      <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 to-foreground/40 pointer-events-none z-10" />
+
+      {/* Navigation Arrows - higher z-index */}
       <button
-        onClick={goToPrev}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-card/30 hover:bg-card/50 backdrop-blur-sm rounded-full p-2 transition-all text-card"
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          goToPrev();
+        }}
+        className="absolute left-4 top-1/2 -translate-y-1/2 z-30 bg-card/30 hover:bg-card/50 backdrop-blur-sm rounded-full p-2 transition-all text-card cursor-pointer"
         aria-label="Previous slide"
       >
         <ChevronLeft size={24} />
       </button>
       <button
-        onClick={goToNext}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-card/30 hover:bg-card/50 backdrop-blur-sm rounded-full p-2 transition-all text-card"
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          goToNext();
+        }}
+        className="absolute right-4 top-1/2 -translate-y-1/2 z-30 bg-card/30 hover:bg-card/50 backdrop-blur-sm rounded-full p-2 transition-all text-card cursor-pointer"
         aria-label="Next slide"
       >
         <ChevronRight size={24} />
       </button>
 
-      {/* Dots Indicator */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+      {/* Dots Indicator - higher z-index */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex gap-2">
         {slides.map((_, index) => (
           <button
             key={index}
-            onClick={() => goToSlide(index)}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              goToSlide(index);
+            }}
             className={cn(
-              "w-2 h-2 rounded-full transition-all",
+              "h-2 rounded-full transition-all cursor-pointer",
               index === currentSlide 
                 ? "bg-primary w-6" 
-                : "bg-card/50 hover:bg-card/80"
+                : "bg-card/50 hover:bg-card/80 w-2"
             )}
             aria-label={`Go to slide ${index + 1}`}
           />
