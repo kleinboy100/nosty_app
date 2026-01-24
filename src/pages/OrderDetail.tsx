@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { OrderStatusTracker } from '@/components/OrderStatusTracker';
-import { DeliveryETA } from '@/components/DeliveryETA';
 import { OrderChat } from '@/components/OrderChat';
 import { ReviewForm } from '@/components/ReviewForm';
 import { PaymentMethodSelector } from '@/components/PaymentMethodSelector';
 import { supabase } from '@/integrations/supabase/client';
-import { Clock, Bell, XCircle, Star, Banknote, CreditCard, Loader2 } from 'lucide-react';
+import { Bell, XCircle, Star, Banknote, CreditCard, Loader2 } from 'lucide-react';
 import { usePushNotifications, ORDER_STATUS_MESSAGES } from '@/hooks/usePushNotifications';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -194,8 +193,6 @@ export default function OrderDetail() {
   };
 
   if (!order) return <div className="min-h-screen flex items-center justify-center"><div className="animate-pulse">Loading...</div></div>;
-
-  const showMap = ['confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(order.status);
   const canReview = order.status === 'delivered' && !hasReviewed;
   
   // Show payment selection after restaurant confirms (status = 'confirmed') and payment not yet confirmed
@@ -319,25 +316,6 @@ export default function OrderDetail() {
           </div>
         )}
 
-        {/* ETA Tracking */}
-        {showMap && (
-          <div className="card-elevated p-6 mb-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Clock className="text-primary" size={20} />
-              <h2 className="font-semibold">Estimated Delivery Time</h2>
-            </div>
-            <DeliveryETA
-              status={order.status}
-              orderCreatedAt={order.created_at}
-              restaurantAddress={order.restaurants?.address}
-              customerAddress={order.delivery_address}
-              restaurantCoords={order.restaurants?.latitude && order.restaurants?.longitude ? {
-                lat: Number(order.restaurants.latitude),
-                lng: Number(order.restaurants.longitude)
-              } : undefined}
-            />
-          </div>
-        )}
 
         {/* Review Section */}
         {canReview && (
