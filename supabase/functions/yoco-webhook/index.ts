@@ -1,8 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createHmac } from "https://deno.land/std@0.177.0/node/crypto.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-yoco-signature',
 };
 
 Deno.serve(async (req) => {
@@ -13,11 +14,47 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const webhookSecret = Deno.env.get('YOCO_WEBHOOK_SECRET');
     
+    // Get signature from header for verification
+    const signature = req.headers.get('x-yoco-signature');
+    
+    // Get raw body for signature verification
+    const rawBody = await req.text();
+    
+    // Verify webhook signature if secret is configured
+    if (webhookSecret) {
+      if (!signature) {
+        console.error('Missing webhook signature - rejecting request');
+        return new Response(
+          JSON.stringify({ error: 'Missing signature' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Compute expected signature using HMAC-SHA256
+      const computedSignature = createHmac('sha256', webhookSecret)
+        .update(rawBody)
+        .digest('hex');
+
+      // Constant-time comparison to prevent timing attacks
+      if (signature !== computedSignature) {
+        console.error('Invalid webhook signature - rejecting request');
+        return new Response(
+          JSON.stringify({ error: 'Invalid signature' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      console.log('Webhook signature verified successfully');
+    } else {
+      console.warn('YOCO_WEBHOOK_SECRET not configured - signature verification skipped (NOT RECOMMENDED FOR PRODUCTION)');
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const payload = await req.json();
-    console.log('Yoco webhook received:', JSON.stringify(payload));
+    const payload = JSON.parse(rawBody);
+    console.log('Yoco webhook received:', JSON.stringify({ type: payload.type, id: payload.payload?.id }));
 
     const { type, payload: eventPayload } = payload;
 
@@ -25,6 +62,21 @@ Deno.serve(async (req) => {
       const checkoutId = eventPayload.metadata?.checkoutId || eventPayload.checkoutId;
       const paymentId = eventPayload.id;
       const orderId = eventPayload.metadata?.orderId;
+
+      // Idempotency check - prevent duplicate processing
+      const { data: existingPayment } = await supabase
+        .from('payments')
+        .select('status')
+        .eq('yoco_checkout_id', checkoutId)
+        .maybeSingle();
+
+      if (existingPayment?.status === 'completed') {
+        console.log('Payment already processed for checkout:', checkoutId);
+        return new Response(
+          JSON.stringify({ received: true, status: 'duplicate' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
       // Update payment record
       const { error: paymentError } = await supabase

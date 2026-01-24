@@ -25,16 +25,10 @@ export function YocoSettings({ restaurantId }: YocoSettingsProps) {
 
   const checkExistingKeys = async () => {
     try {
-      const { data } = await supabase
-        .from('restaurants')
-        .select('yoco_secret_key, yoco_public_key')
-        .eq('id', restaurantId)
-        .single();
-      
-      setHasExistingKeys(!!data?.yoco_secret_key);
-      if (data?.yoco_public_key) {
-        setPublicKey(data.yoco_public_key);
-      }
+      // Use server-side function to check if keys are configured (without exposing them)
+      const { data: hasKeys } = await supabase
+        .rpc('owner_has_payment_keys', { p_restaurant_id: restaurantId });
+      setHasExistingKeys(!!hasKeys);
     } catch (error) {
       console.error('Error checking keys:', error);
     } finally {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Clock, Star, MapPin, Phone, ArrowLeft, MessageSquare } from 'lucide-react';
+import { Clock, Star, MapPin, ArrowLeft, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MenuItem } from '@/components/MenuItem';
 import { ReviewList } from '@/components/ReviewList';
@@ -12,10 +12,10 @@ interface Restaurant {
   description: string | null;
   cuisine_type: string;
   address: string;
-  phone: string | null;
   image_url: string | null;
   rating: number;
   average_prep_time: number;
+  accepts_online_payment?: boolean;
 }
 
 interface MenuItemType {
@@ -43,12 +43,13 @@ export default function RestaurantDetail() {
   }, [id]);
 
   const fetchRestaurantData = async () => {
+    // Use public view to avoid exposing sensitive data (phone, owner_id, yoco keys)
     const [restaurantRes, menuRes] = await Promise.all([
-      supabase.from('restaurants').select('*').eq('id', id).single(),
+      supabase.from('restaurants_public').select('*').eq('id', id).maybeSingle(),
       supabase.from('menu_items').select('*').eq('restaurant_id', id).eq('is_available', true)
     ]);
 
-    if (restaurantRes.error) {
+    if (restaurantRes.error || !restaurantRes.data) {
       console.error('Error fetching restaurant:', restaurantRes.error);
       navigate('/');
       return;
@@ -136,12 +137,7 @@ export default function RestaurantDetail() {
                   <MapPin size={16} />
                   <span>{restaurant.address}</span>
                 </div>
-                {restaurant.phone && (
-                  <div className="flex items-center gap-1">
-                    <Phone size={16} />
-                    <span>{restaurant.phone}</span>
-                  </div>
-                )}
+                {/* Phone number is no longer exposed publicly for privacy */}
               </div>
             </div>
           </div>
