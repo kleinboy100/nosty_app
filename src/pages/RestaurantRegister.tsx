@@ -9,15 +9,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { MenuItemForm, MenuItemData } from '@/components/MenuItemForm';
-import { ChevronLeft, ChevronRight, Store, UtensilsCrossed, Check } from 'lucide-react';
+import { DocumentUpload } from '@/components/DocumentUpload';
+import { ChevronLeft, ChevronRight, Store, UtensilsCrossed, Check, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const cuisineTypes = ['Kasi Food', 'Braai & Grill', 'Bunny Chow', 'Pap & Vleis', 'Gatsby', 'Vetkoek', 'Shisanyama', 'Traditional', 'Fast Food', 'Pizza', 'Chicken', 'Seafood'];
 
 const steps = [
   { id: 1, title: 'Basic Info', icon: Store },
-  { id: 2, title: 'Menu Items', icon: UtensilsCrossed },
-  { id: 3, title: 'Complete', icon: Check },
+  { id: 2, title: 'Verification', icon: ShieldCheck },
+  { id: 3, title: 'Menu Items', icon: UtensilsCrossed },
+  { id: 4, title: 'Complete', icon: Check },
 ];
 
 export default function RestaurantRegister() {
@@ -26,8 +28,18 @@ export default function RestaurantRegister() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const [form, setForm] = useState({ name: '', description: '', cuisine_type: '', address: '', phone: '' });
+  const [form, setForm] = useState({ 
+    name: '', 
+    description: '', 
+    cuisine_type: '', 
+    address: '', 
+    phone: '',
+    id_number: ''
+  });
   const [menuItems, setMenuItems] = useState<MenuItemData[]>([]);
+  const [idDocument, setIdDocument] = useState<File | null>(null);
+  const [selfiePhoto, setSelfiePhoto] = useState<File | null>(null);
+  const [proofOfAddress, setProofOfAddress] = useState<File | null>(null);
 
   const validateStep1 = () => {
     if (!form.name || !form.cuisine_type || !form.address) {
@@ -38,6 +50,26 @@ export default function RestaurantRegister() {
   };
 
   const validateStep2 = () => {
+    if (!form.id_number || form.id_number.length < 6) {
+      toast({ title: 'Invalid ID', description: 'Please enter a valid ID number', variant: 'destructive' });
+      return false;
+    }
+    if (!idDocument) {
+      toast({ title: 'Missing document', description: 'Please upload your ID document', variant: 'destructive' });
+      return false;
+    }
+    if (!selfiePhoto) {
+      toast({ title: 'Missing selfie', description: 'Please upload a selfie for verification', variant: 'destructive' });
+      return false;
+    }
+    if (!proofOfAddress) {
+      toast({ title: 'Missing proof of address', description: 'Please upload proof of address', variant: 'destructive' });
+      return false;
+    }
+    return true;
+  };
+
+  const validateStep3 = () => {
     if (menuItems.length === 0) {
       toast({ title: 'No menu items', description: 'Please add at least one menu item', variant: 'destructive' });
       return false;
@@ -54,54 +86,84 @@ export default function RestaurantRegister() {
   const nextStep = () => {
     if (currentStep === 1 && !validateStep1()) return;
     if (currentStep === 2 && !validateStep2()) return;
-    setCurrentStep(prev => Math.min(prev + 1, 3));
+    if (currentStep === 3 && !validateStep3()) return;
+    setCurrentStep(prev => Math.min(prev + 1, 4));
   };
 
   const prevStep = () => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
+  const uploadDocument = async (file: File, path: string) => {
+    const { data, error } = await supabase.storage
+      .from('restaurant-documents')
+      .upload(path, file);
+    
+    if (error) throw error;
+    return data.path;
+  };
+
   const handleSubmit = async () => {
     if (!user) { navigate('/auth'); return; }
     
     setLoading(true);
+
+    try {
+      // Upload verification documents
+      const userId = user.id;
+      const timestamp = Date.now();
+      
+      await Promise.all([
+        uploadDocument(idDocument!, `${userId}/id-document-${timestamp}`),
+        uploadDocument(selfiePhoto!, `${userId}/selfie-${timestamp}`),
+        uploadDocument(proofOfAddress!, `${userId}/proof-of-address-${timestamp}`)
+      ]);
     
-    // Create restaurant
-    const { data: restaurant, error: restaurantError } = await supabase
-      .from('restaurants')
-      .insert({ ...form, owner_id: user.id })
-      .select()
-      .single();
+      // Create restaurant
+      const { data: restaurant, error: restaurantError } = await supabase
+        .from('restaurants')
+        .insert({ 
+          name: form.name,
+          description: form.description,
+          cuisine_type: form.cuisine_type,
+          address: form.address,
+          phone: form.phone,
+          owner_id: user.id 
+        })
+        .select()
+        .single();
 
-    if (restaurantError) {
-      setLoading(false);
-      toast({ title: 'Error', description: restaurantError.message, variant: 'destructive' });
-      return;
-    }
-
-    // Create menu items
-    if (menuItems.length > 0) {
-      const itemsToInsert = menuItems.map(item => ({
-        restaurant_id: restaurant.id,
-        name: item.name,
-        description: item.description,
-        price: parseFloat(item.price) || 0,
-        category: item.category,
-        is_available: true,
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('menu_items')
-        .insert(itemsToInsert);
-
-      if (itemsError) {
-        toast({ title: 'Warning', description: 'Restaurant created but some menu items failed to save', variant: 'destructive' });
+      if (restaurantError) {
+        throw restaurantError;
       }
-    }
 
-    setLoading(false);
-    toast({ title: 'Success!', description: 'Your takeaway has been registered' });
-    navigate('/restaurant/dashboard');
+      // Create menu items
+      if (menuItems.length > 0) {
+        const itemsToInsert = menuItems.map(item => ({
+          restaurant_id: restaurant.id,
+          name: item.name,
+          description: item.description,
+          price: parseFloat(item.price) || 0,
+          category: item.category,
+          is_available: true,
+        }));
+
+        const { error: itemsError } = await supabase
+          .from('menu_items')
+          .insert(itemsToInsert);
+
+        if (itemsError) {
+          toast({ title: 'Warning', description: 'Restaurant created but some menu items failed to save', variant: 'destructive' });
+        }
+      }
+
+      setLoading(false);
+      toast({ title: 'Success!', description: 'Your takeaway has been registered' });
+      navigate('/restaurant/dashboard');
+    } catch (error: any) {
+      setLoading(false);
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    }
   };
 
   return (
@@ -122,15 +184,15 @@ export default function RestaurantRegister() {
                 <div className="flex flex-col items-center">
                   <div
                     className={cn(
-                      "w-12 h-12 rounded-full flex items-center justify-center transition-all",
+                      "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all",
                       isActive ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
                       isCurrent && "ring-4 ring-primary/20"
                     )}
                   >
-                    <Icon size={24} />
+                    <Icon size={20} />
                   </div>
                   <span className={cn(
-                    "text-xs mt-2 font-medium",
+                    "text-xs mt-2 font-medium text-center hidden sm:block",
                     isActive ? "text-foreground" : "text-muted-foreground"
                   )}>
                     {step.title}
@@ -138,7 +200,7 @@ export default function RestaurantRegister() {
                 </div>
                 {index < steps.length - 1 && (
                   <div className={cn(
-                    "flex-1 h-0.5 mx-4",
+                    "flex-1 h-0.5 mx-2 md:mx-4",
                     currentStep > step.id ? "bg-primary" : "bg-muted"
                   )} />
                 )}
@@ -198,8 +260,61 @@ export default function RestaurantRegister() {
             </div>
           )}
 
-          {/* Step 2: Menu Items */}
+          {/* Step 2: Verification Documents */}
           {currentStep === 2 && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="font-semibold text-lg mb-2">Identity Verification</h2>
+                <p className="text-muted-foreground text-sm mb-4">
+                  We need to verify your identity to ensure the safety and trust of our platform.
+                </p>
+              </div>
+
+              <div>
+                <Label>ID Number *</Label>
+                <Input
+                  required
+                  value={form.id_number}
+                  onChange={e => setForm({ ...form, id_number: e.target.value })}
+                  placeholder="Enter your ID number"
+                  maxLength={13}
+                />
+              </div>
+
+              <DocumentUpload
+                label="ID Document"
+                description="Upload a clear photo of your ID document (front side)"
+                accept="image/*,.pdf"
+                value={idDocument}
+                onChange={setIdDocument}
+                icon="document"
+                required
+              />
+
+              <DocumentUpload
+                label="Selfie for Verification"
+                description="Take a selfie holding your ID document next to your face"
+                accept="image/*"
+                value={selfiePhoto}
+                onChange={setSelfiePhoto}
+                icon="camera"
+                required
+              />
+
+              <DocumentUpload
+                label="Proof of Address"
+                description="Upload a utility bill, bank statement, or lease agreement (not older than 3 months)"
+                accept="image/*,.pdf"
+                value={proofOfAddress}
+                onChange={setProofOfAddress}
+                icon="document"
+                required
+              />
+            </div>
+          )}
+
+          {/* Step 3: Menu Items */}
+          {currentStep === 3 && (
             <div>
               <h2 className="font-semibold text-lg mb-4">Add Your Menu</h2>
               <p className="text-muted-foreground text-sm mb-4">
@@ -209,8 +324,8 @@ export default function RestaurantRegister() {
             </div>
           )}
 
-          {/* Step 3: Complete */}
-          {currentStep === 3 && (
+          {/* Step 4: Complete */}
+          {currentStep === 4 && (
             <div className="text-center py-8">
               <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                 <Check size={40} className="text-primary" />
@@ -224,6 +339,10 @@ export default function RestaurantRegister() {
                 <h3 className="font-semibold mb-2">{form.name}</h3>
                 <p className="text-sm text-muted-foreground">{form.cuisine_type} • {form.address}</p>
                 <p className="text-sm mt-2">{menuItems.length} menu items</p>
+                <div className="flex items-center gap-2 mt-2 text-sm text-primary">
+                  <ShieldCheck size={16} />
+                  <span>Verification documents uploaded</span>
+                </div>
               </div>
             </div>
           )}
@@ -238,7 +357,7 @@ export default function RestaurantRegister() {
               <div />
             )}
             
-            {currentStep < 3 ? (
+            {currentStep < 4 ? (
               <Button className="btn-primary" onClick={nextStep}>
                 Next <ChevronRight size={18} className="ml-1" />
               </Button>

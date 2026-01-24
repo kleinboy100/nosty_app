@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Clock, Star, MapPin, ArrowLeft, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { MenuItem } from '@/components/MenuItem';
+import { KFCMenuItem } from '@/components/KFCMenuItem';
 import { ReviewList } from '@/components/ReviewList';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -189,7 +189,7 @@ export default function RestaurantDetail() {
               </div>
             )}
 
-            {/* Menu Items */}
+            {/* Menu Items - KFC Style Grid */}
             <div>
               <h2 className="font-display text-2xl font-bold text-foreground mb-4">
                 {selectedCategory === 'All' ? 'Menu' : selectedCategory}
@@ -199,9 +199,9 @@ export default function RestaurantDetail() {
                   <p className="text-muted-foreground">No menu items available</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {filteredItems.map(item => (
-                    <MenuItem
+                    <KFCMenuItem
                       key={item.id}
                       id={item.id}
                       name={item.name}
