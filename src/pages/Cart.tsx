@@ -39,13 +39,10 @@ export default function Cart() {
       }
       
       try {
-        const { data } = await supabase
-          .from('restaurants')
-          .select('yoco_secret_key')
-          .eq('id', restaurantId)
-          .single();
-        
-        setOnlinePaymentAvailable(!!data?.yoco_secret_key);
+        // Use server-side function to check payment status without exposing secrets
+        const { data: hasPayment } = await supabase
+          .rpc('restaurant_has_online_payment', { p_restaurant_id: restaurantId });
+        setOnlinePaymentAvailable(!!hasPayment);
       } catch (error) {
         console.error('Error checking payment availability:', error);
       } finally {
@@ -117,53 +114,52 @@ export default function Cart() {
     setLoading(true);
 
     try {
-      // Create order with payment method
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          user_id: user.id,
-          restaurant_id: restaurantId,
-          total_amount: total + 25, // Include delivery fee
-          delivery_address: deliveryAddress,
-          notes: notes || null,
-          status: paymentMethod === 'online' ? 'awaiting_payment' : 'pending',
-          payment_method: paymentMethod
-        })
-        .select()
-        .single();
+      // Use server-side validated order creation to prevent price manipulation
+      const { data: orderId, error: orderError } = await supabase.rpc('create_validated_order', {
+        p_restaurant_id: restaurantId,
+        p_delivery_address: deliveryAddress,
+        p_notes: notes || null,
+        p_payment_method: paymentMethod,
+        p_items: items.map(item => ({
+          menu_item_id: item.menuItemId,
+          quantity: item.quantity
+          // No prices sent - server validates from menu_items table
+        }))
+      });
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error('Order error:', orderError);
+        toast({
+          title: "Order Failed",
+          description: orderError.message || "Failed to place order. Please try again.",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
 
-      // Create order items
-      const orderItems = items.map(item => ({
-        order_id: order.id,
-        menu_item_id: item.menuItemId,
-        quantity: item.quantity,
-        price: item.price,
-        item_name: item.name
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
-
-      if (itemsError) throw itemsError;
+      if (!orderId) {
+        toast({
+          title: "Order Failed",
+          description: "Failed to create order. Please try again.",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
 
       // If online payment, redirect to Yoco checkout
       if (paymentMethod === 'online') {
         const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-yoco-checkout', {
           body: { 
-            orderId: order.id,
-            successUrl: `${window.location.origin}/orders/${order.id}?payment=success`,
-            cancelUrl: `${window.location.origin}/orders/${order.id}?payment=cancelled`,
-            failureUrl: `${window.location.origin}/orders/${order.id}?payment=failed`,
+            orderId: orderId,
+            successUrl: `${window.location.origin}/orders/${orderId}?payment=success`,
+            cancelUrl: `${window.location.origin}/orders/${orderId}?payment=cancelled`,
+            failureUrl: `${window.location.origin}/orders/${orderId}?payment=failed`,
           }
         });
 
         if (checkoutError || checkoutData?.error) {
-          // Rollback: delete the order if payment fails to initialize
-          await supabase.from('orders').delete().eq('id', order.id);
-          
           toast({
             title: "Payment setup failed",
             description: checkoutData?.error || "Could not initiate online payment. Please try again.",
@@ -185,7 +181,7 @@ export default function Cart() {
         title: "Order placed!",
         description: "Your order has been submitted successfully."
       });
-      navigate(`/orders/${order.id}`);
+      navigate(`/orders/${orderId}`);
     } catch (error) {
       console.error('Error placing order:', error);
       toast({

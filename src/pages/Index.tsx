@@ -31,10 +31,10 @@ export default function Index() {
   }, []);
 
   const fetchRestaurants = async () => {
+    // Use public view to avoid exposing sensitive data (phone, owner_id, yoco keys)
     const { data, error } = await supabase
-      .from('restaurants')
+      .from('restaurants_public')
       .select('*')
-      .eq('is_active', true)
       .order('created_at', { ascending: false });
 
     if (error) {
