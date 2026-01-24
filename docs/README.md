@@ -1,19 +1,28 @@
-# KasiConnect
+# KasiConnect (Takeaway Ordering App)
 
-# Takeaway Ordering App (Lovable + Supabase + Yoco)
-
-A food ordering platform where customers discover restaurants/takeaways, place orders for delivery or collection, and pay via Cash on Delivery or online payments (Yoco). Restaurants can register, get verified, manage orders, update progress/ETA, and message customers in real time.
+A food ordering platform where customers discover local restaurants, place orders for delivery or collection, and pay via Cash or secure online payments (Yoco).
 
 ## Core user journeys
 ### Customers
-- Sign up / sign in via phone, Google, or email. ([supabase.com](https://supabase.com/docs/guides/auth/phone-login) [supabase.com](https://supabase.com/docs/guides/auth/social-login/auth-google))
-- Browse/search restaurants, place delivery/collection orders, track progress + ETA, chat in-app, and leave reviews.
+- Secure sign-in via phone, Google, or email.
+- Mobile-optimized browsing with a persistent bottom navigation bar.
+- Real-time order tracking and in-app chat.
 
-### Restaurants (takeaways)
-- Register a restaurant profile.
-- Complete verification (currently manual/partial; see roadmap).
-- Optionally apply for online payments (Yoco) to accept online card payments.
-- Approve/decline incoming orders; update order progress and ETA; chat with customers.
+### Restaurants
+- Register profiles and manage digital menus.
+- Securely configure Yoco payment keys (keys are masked and never exposed to the UI).
+- Manage order lifecycle (Awaiting Payment -> Pending -> Preparing -> Out for Delivery).
+
+## Tech stack
+- **Frontend:** Lovable (React + Vite + Tailwind).
+- **Backend:** Supabase (Auth, Postgres, Realtime, Edge Functions).
+- **Payments:** Yoco SDK + Secure Server-side Webhooks.
+
+## Security (Current State)
+- **Zero-Trust Frontend:** No secrets stored in client code.
+- **Server-Side Validation:** All orders are validated via database functions to prevent price tampering.
+- **Webhook Integrity:** All payment signals are verified using HMAC-SHA256 signatures.
+- **Privacy First:** Sensitive data (phone numbers, owner IDs) is isolated behind public views.- Approve/decline incoming orders; update order progress and ETA; chat with customers.
 
 ## Tech stack
 - Lovable (frontend app). Frontend code is public—no secrets stored here. ([docs.lovable.dev](https://docs.lovable.dev/tips-tricks/avoiding-security-pitfalls))
