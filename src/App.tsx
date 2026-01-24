@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { Navbar } from "@/components/Navbar";
+import { BottomNav } from "@/components/BottomNav";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import RestaurantDetail from "./pages/RestaurantDetail";
@@ -27,17 +28,20 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Navbar />
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/restaurant/:id" element={<RestaurantDetail />} />
-              <Route path="/cart" element={<Cart />} />
-              <Route path="/orders" element={<Orders />} />
-              <Route path="/orders/:id" element={<OrderDetail />} />
-              <Route path="/restaurant/register" element={<RestaurantRegister />} />
-              <Route path="/restaurant/dashboard" element={<RestaurantDashboard />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <div className="pb-16 md:pb-0">
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/restaurant/:id" element={<RestaurantDetail />} />
+                <Route path="/cart" element={<Cart />} />
+                <Route path="/orders" element={<Orders />} />
+                <Route path="/orders/:id" element={<OrderDetail />} />
+                <Route path="/restaurant/register" element={<RestaurantRegister />} />
+                <Route path="/restaurant/dashboard" element={<RestaurantDashboard />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </div>
+            <BottomNav />
           </BrowserRouter>
         </TooltipProvider>
       </CartProvider>
