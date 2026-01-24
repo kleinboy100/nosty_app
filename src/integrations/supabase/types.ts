@@ -151,6 +151,7 @@ export type Database = {
           delivery_address: string
           id: string
           notes: string | null
+          payment_confirmed: boolean | null
           payment_method: string | null
           restaurant_id: string
           status: string
@@ -163,6 +164,7 @@ export type Database = {
           delivery_address: string
           id?: string
           notes?: string | null
+          payment_confirmed?: boolean | null
           payment_method?: string | null
           restaurant_id: string
           status?: string
@@ -175,6 +177,7 @@ export type Database = {
           delivery_address?: string
           id?: string
           notes?: string | null
+          payment_confirmed?: boolean | null
           payment_method?: string | null
           restaurant_id?: string
           status?: string
@@ -278,6 +281,8 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean | null
+          latitude: number | null
+          longitude: number | null
           name: string
           owner_id: string
           phone: string | null
@@ -295,6 +300,8 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
           name: string
           owner_id: string
           phone?: string | null
@@ -312,6 +319,8 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
           name?: string
           owner_id?: string
           phone?: string | null
@@ -387,6 +396,8 @@ export type Database = {
           id: string | null
           image_url: string | null
           is_active: boolean | null
+          latitude: number | null
+          longitude: number | null
           name: string | null
           rating: number | null
           updated_at: string | null
@@ -401,6 +412,8 @@ export type Database = {
           id?: string | null
           image_url?: string | null
           is_active?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
           name?: string | null
           rating?: number | null
           updated_at?: string | null
@@ -415,6 +428,8 @@ export type Database = {
           id?: string | null
           image_url?: string | null
           is_active?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
           name?: string | null
           rating?: number | null
           updated_at?: string | null
