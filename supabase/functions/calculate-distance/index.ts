@@ -21,9 +21,15 @@ serve(async (req) => {
   try {
     const mapboxToken = Deno.env.get("MAPBOX_PUBLIC_TOKEN");
     if (!mapboxToken) {
+      // Return fallback estimate if no token configured
+      console.log("Mapbox token not configured, returning default estimate");
       return new Response(
-        JSON.stringify({ error: "Mapbox token not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ 
+          distanceKm: 5,
+          durationMinutes: 15,
+          method: 'default-estimate'
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -35,40 +41,55 @@ serve(async (req) => {
 
     // Geocode restaurant address if coordinates not provided
     if (!restaurantCoords && body.restaurantAddress) {
-      const geocodeRes = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(body.restaurantAddress)}.json?access_token=${mapboxToken}&country=za&limit=1`
-      );
-      const geocodeData = await geocodeRes.json();
-      
-      if (geocodeData.features && geocodeData.features.length > 0) {
-        const [lng, lat] = geocodeData.features[0].center;
-        restaurantCoords = { lat, lng };
-        console.log("Geocoded restaurant:", body.restaurantAddress, "->", restaurantCoords);
+      try {
+        const geocodeRes = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(body.restaurantAddress)}.json?access_token=${mapboxToken}&country=za&limit=1`
+        );
+        const geocodeData = await geocodeRes.json();
+        
+        if (geocodeData.features && geocodeData.features.length > 0) {
+          const [lng, lat] = geocodeData.features[0].center;
+          restaurantCoords = { lat, lng };
+          console.log("Geocoded restaurant:", body.restaurantAddress, "->", restaurantCoords);
+        } else {
+          console.log("No geocode results for restaurant address:", body.restaurantAddress);
+        }
+      } catch (geocodeError) {
+        console.error("Failed to geocode restaurant address:", geocodeError);
       }
     }
 
     // Geocode customer address if coordinates not provided
     if (!customerCoords && body.customerAddress) {
-      const geocodeRes = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(body.customerAddress)}.json?access_token=${mapboxToken}&country=za&limit=1`
-      );
-      const geocodeData = await geocodeRes.json();
-      
-      if (geocodeData.features && geocodeData.features.length > 0) {
-        const [lng, lat] = geocodeData.features[0].center;
-        customerCoords = { lat, lng };
-        console.log("Geocoded customer:", body.customerAddress, "->", customerCoords);
+      try {
+        const geocodeRes = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(body.customerAddress)}.json?access_token=${mapboxToken}&country=za&limit=1`
+        );
+        const geocodeData = await geocodeRes.json();
+        
+        if (geocodeData.features && geocodeData.features.length > 0) {
+          const [lng, lat] = geocodeData.features[0].center;
+          customerCoords = { lat, lng };
+          console.log("Geocoded customer:", body.customerAddress, "->", customerCoords);
+        } else {
+          console.log("No geocode results for customer address:", body.customerAddress);
+        }
+      } catch (geocodeError) {
+        console.error("Failed to geocode customer address:", geocodeError);
       }
     }
 
+    // If we couldn't get both coordinates, return a default estimate instead of an error
     if (!restaurantCoords || !customerCoords) {
+      console.log("Could not determine coordinates, returning default estimate");
       return new Response(
         JSON.stringify({ 
-          error: "Could not determine coordinates for one or both addresses",
-          restaurantCoords,
-          customerCoords
+          distanceKm: 5,
+          durationMinutes: 15,
+          method: 'default-estimate',
+          note: 'Could not calculate exact distance'
         }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
