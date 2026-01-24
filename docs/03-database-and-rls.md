@@ -1,24 +1,19 @@
 # Database & RLS
 
-## Design goals
-- Least privilege by default via RLS policies. ([supabase.com](https://supabase.com/docs/guides/database/postgres/row-level-security))
-- Keep sensitive restaurant verification data and phone numbers out of public-readable tables.
+## Data Isolation
+To prevent data scraping and protect owner privacy, we use **Database Views**:
+- **`restaurants_public`:** This is the primary view for the discovery page. It excludes sensitive columns like `owner_id`, `phone_number`, and `yoco_secret_key`.
 
-## Core tables (conceptual)
-- `profiles` (user profile, role flags)
-- `restaurants` (public listing fields)
-- `restaurant_private` (owner phone, verification docs metadata; not public)
-- `restaurant_verifications` (status, reviewer notes, timestamps)
-- `menu_items`
-- `orders` (status, delivery/collection, ETA)
-- `order_items`
-- `payments` (COD/online, status, yoco ids)
-- `messages` (chat)
-- `reviews`
+## Server-Side Enforcement
+We use `SECURITY DEFINER` functions to perform actions that require elevated permissions without granting those permissions to the public role:
+- **`create_validated_order`:** Prevents price manipulation by recalculating totals server-side.
+- **`restaurant_has_online_payment`:** Checks if a restaurant is set up for Yoco without returning the actual API keys to the frontend.
 
-## RLS policy principles
-- Users can read/update their own profile using `auth.uid()` patterns. ([supabase.com](https://supabase.com/docs/guides/database/postgres/row-level-security))
-- Public restaurant discovery: expose only non-sensitive fields in `restaurants`.
+## Core Tables
+- `profiles`: User identity.
+- `restaurants`: Store details.
+- `orders` & `order_items`: Order history and server-validated totals.
+- `payments`: Tracks Yoco `checkoutId` and verification status.- Public restaurant discovery: expose only non-sensitive fields in `restaurants`.
 - Private contact details: restrict `restaurant_private` to restaurant owner/admin only (prevents scraping).
 - Orders: customer sees own orders; restaurant sees orders for their restaurant.
 - Messages: only participants of an order/thread can read/write.
