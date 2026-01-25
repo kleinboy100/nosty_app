@@ -3,7 +3,6 @@ import { MapPin, Loader2, Navigation } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
 
 interface AddressAutocompleteProps {
   value: string;
@@ -16,8 +15,9 @@ interface AddressAutocompleteProps {
 }
 
 interface Suggestion {
-  place_name: string;
-  center: [number, number]; // [lng, lat]
+  display_name: string;
+  lat: string;
+  lon: string;
 }
 
 export function AddressAutocomplete({
@@ -34,7 +34,6 @@ export function AddressAutocomplete({
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
-  const [mapboxToken, setMapboxToken] = useState<string | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -43,21 +42,6 @@ export function AddressAutocomplete({
   useEffect(() => {
     setQuery(value);
   }, [value]);
-
-  // Fetch mapbox token on mount
-  useEffect(() => {
-    const fetchToken = async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
-        if (!error && data?.token) {
-          setMapboxToken(data.token);
-        }
-      } catch (err) {
-        console.error('Error fetching mapbox token:', err);
-      }
-    };
-    fetchToken();
-  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -76,8 +60,9 @@ export function AddressAutocomplete({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Search addresses using OpenStreetMap Nominatim (free, no API key)
   const searchAddresses = async (searchQuery: string) => {
-    if (!mapboxToken || searchQuery.length < 3) {
+    if (searchQuery.length < 3) {
       setSuggestions([]);
       return;
     }
@@ -85,17 +70,17 @@ export function AddressAutocomplete({
     setLoading(true);
     try {
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?access_token=${mapboxToken}&country=za&limit=5&types=address,place,locality,neighborhood`
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&countrycodes=za&limit=5&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'PlatePal-Delivery-App/1.0'
+          }
+        }
       );
       const data = await response.json();
       
-      if (data.features) {
-        setSuggestions(
-          data.features.map((feature: any) => ({
-            place_name: feature.place_name,
-            center: feature.center
-          }))
-        );
+      if (data && Array.isArray(data)) {
+        setSuggestions(data);
         setShowDropdown(true);
       }
     } catch (error) {
@@ -117,15 +102,15 @@ export function AddressAutocomplete({
     }
     debounceRef.current = setTimeout(() => {
       searchAddresses(newValue);
-    }, 300);
+    }, 400); // Slightly longer debounce for Nominatim rate limits
   };
 
   const handleSelectSuggestion = (suggestion: Suggestion) => {
-    setQuery(suggestion.place_name);
-    onChange(suggestion.place_name);
+    setQuery(suggestion.display_name);
+    onChange(suggestion.display_name);
     onCoordinatesChange?.({
-      lat: suggestion.center[1],
-      lng: suggestion.center[0]
+      lat: parseFloat(suggestion.lat),
+      lng: parseFloat(suggestion.lon)
     });
     setSuggestions([]);
     setShowDropdown(false);
@@ -151,48 +136,29 @@ export function AddressAutocomplete({
 
       const { latitude, longitude } = position.coords;
 
-      // Wait for token if not yet loaded
-      let token = mapboxToken;
-      if (!token) {
-        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
-        if (!error && data?.token) {
-          token = data.token;
-          setMapboxToken(data.token);
-        } else {
-          console.error('Could not fetch mapbox token');
-          // Fallback: set coordinates only
-          onCoordinatesChange?.({ lat: latitude, lng: longitude });
-          setGettingLocation(false);
-          return;
-        }
-      }
-
-      // Reverse geocode to get address - using broader types for better results
+      // Reverse geocode using OpenStreetMap Nominatim (free, no API key)
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}&types=address,poi,place,locality,neighborhood&limit=1`
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'PlatePal-Delivery-App/1.0'
+          }
+        }
       );
       const data = await response.json();
 
-      if (data.features && data.features.length > 0) {
-        const address = data.features[0].place_name;
+      if (data && data.display_name) {
+        // Use the formatted display_name from Nominatim
+        const address = data.display_name;
         setQuery(address);
         onChange(address);
         onCoordinatesChange?.({ lat: latitude, lng: longitude });
       } else {
-        // Fallback: try with fewer type restrictions
-        const fallbackResponse = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}&limit=1`
-        );
-        const fallbackData = await fallbackResponse.json();
-        
-        if (fallbackData.features && fallbackData.features.length > 0) {
-          const address = fallbackData.features[0].place_name;
-          setQuery(address);
-          onChange(address);
-          onCoordinatesChange?.({ lat: latitude, lng: longitude });
-        } else {
-          console.error('Could not reverse geocode location');
-        }
+        // Fallback to coordinate string if reverse geocoding fails
+        const fallbackAddress = `Location: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+        setQuery(fallbackAddress);
+        onChange(fallbackAddress);
+        onCoordinatesChange?.({ lat: latitude, lng: longitude });
       }
     } catch (error: any) {
       console.error('Error getting current location:', error);
@@ -234,7 +200,7 @@ export function AddressAutocomplete({
           variant="outline"
           size="sm"
           onClick={handleUseCurrentLocation}
-          disabled={gettingLocation || !mapboxToken}
+          disabled={gettingLocation}
           className="mt-2 w-full"
         >
           {gettingLocation ? (
@@ -286,7 +252,7 @@ export function AddressAutocomplete({
                 className="w-full px-4 py-3 flex items-center gap-3 hover:bg-muted/50 transition-colors text-left"
               >
                 <MapPin className="text-muted-foreground shrink-0" size={16} />
-                <span className="text-sm truncate">{suggestion.place_name}</span>
+                <span className="text-sm truncate">{suggestion.display_name}</span>
               </button>
             ))
           ) : query.length >= 3 ? (
