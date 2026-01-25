@@ -7,7 +7,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { RestaurantOrderCard } from '@/components/RestaurantOrderCard';
 import { YocoSettings } from '@/components/YocoSettings';
-import { Plus, Store, Bell, Volume2, Settings } from 'lucide-react';
+import { MenuManager } from '@/components/MenuManager';
+import { Plus, Store, Bell, Volume2, Settings, UtensilsCrossed } from 'lucide-react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 export default function RestaurantDashboard() {
@@ -187,6 +188,10 @@ export default function RestaurantDashboard() {
                   )}
                 </TabsTrigger>
                 <TabsTrigger value="completed">Completed</TabsTrigger>
+                <TabsTrigger value="menu">
+                  <UtensilsCrossed size={16} className="mr-1" />
+                  Menu
+                </TabsTrigger>
                 <TabsTrigger value="settings">
                   <Settings size={16} className="mr-1" />
                   Settings
@@ -246,6 +251,9 @@ export default function RestaurantDashboard() {
                     ))}
                   </div>
                 )}
+              </TabsContent>
+              <TabsContent value="menu">
+                <MenuManager restaurantId={selectedRestaurant} />
               </TabsContent>
               <TabsContent value="settings">
                 <div className="max-w-xl">
