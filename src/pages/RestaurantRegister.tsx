@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,9 +9,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { MenuItemForm, MenuItemData } from '@/components/MenuItemForm';
-import { DocumentUpload } from '@/components/DocumentUpload';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
-import { ChevronLeft, ChevronRight, Store, UtensilsCrossed, Check, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Store, UtensilsCrossed, Check, ShieldCheck, Camera, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const cuisineTypes = ['Kasi Food', 'Braai & Grill', 'Bunny Chow', 'Pap & Vleis', 'Gatsby', 'Vetkoek', 'Shisanyama', 'Traditional', 'Fast Food', 'Pizza', 'Chicken', 'Seafood'];
@@ -35,13 +34,33 @@ export default function RestaurantRegister() {
     cuisine_type: '', 
     address: '', 
     phone: '',
-    id_number: ''
+    id_number: '',
+    company_reg_number: ''
   });
   const [menuItems, setMenuItems] = useState<MenuItemData[]>([]);
-  const [idDocument, setIdDocument] = useState<File | null>(null);
   const [selfiePhoto, setSelfiePhoto] = useState<File | null>(null);
-  const [proofOfAddress, setProofOfAddress] = useState<File | null>(null);
+  const [selfiePreview, setSelfiePreview] = useState<string | null>(null);
   const [addressCoords, setAddressCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSelfieChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelfiePhoto(file);
+      
+      const reader = new FileReader();
+      reader.onload = (ev) => setSelfiePreview(ev.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeSelfie = () => {
+    setSelfiePhoto(null);
+    setSelfiePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const validateStep1 = () => {
     if (!form.name || !form.cuisine_type || !form.address) {
@@ -56,16 +75,8 @@ export default function RestaurantRegister() {
       toast({ title: 'Invalid ID', description: 'Please enter a valid ID number', variant: 'destructive' });
       return false;
     }
-    if (!idDocument) {
-      toast({ title: 'Missing document', description: 'Please upload your ID document', variant: 'destructive' });
-      return false;
-    }
     if (!selfiePhoto) {
-      toast({ title: 'Missing selfie', description: 'Please upload a selfie for verification', variant: 'destructive' });
-      return false;
-    }
-    if (!proofOfAddress) {
-      toast({ title: 'Missing proof of address', description: 'Please upload proof of address', variant: 'destructive' });
+      toast({ title: 'Missing selfie', description: 'Please take a selfie for verification', variant: 'destructive' });
       return false;
     }
     return true;
@@ -111,15 +122,11 @@ export default function RestaurantRegister() {
     setLoading(true);
 
     try {
-      // Upload verification documents
+      // Upload selfie
       const userId = user.id;
       const timestamp = Date.now();
       
-      await Promise.all([
-        uploadDocument(idDocument!, `${userId}/id-document-${timestamp}`),
-        uploadDocument(selfiePhoto!, `${userId}/selfie-${timestamp}`),
-        uploadDocument(proofOfAddress!, `${userId}/proof-of-address-${timestamp}`)
-      ]);
+      await uploadDocument(selfiePhoto!, `${userId}/selfie-${timestamp}`);
     
       // Create restaurant with coordinates if available
       const { data: restaurant, error: restaurantError } = await supabase
@@ -264,7 +271,7 @@ export default function RestaurantRegister() {
             </div>
           )}
 
-          {/* Step 2: Verification Documents */}
+          {/* Step 2: Verification */}
           {currentStep === 2 && (
             <div className="space-y-6">
               <div>
@@ -285,35 +292,69 @@ export default function RestaurantRegister() {
                 />
               </div>
 
-              <DocumentUpload
-                label="ID Document"
-                description="Upload a clear photo of your ID document (front side)"
-                accept="image/*,.pdf"
-                value={idDocument}
-                onChange={setIdDocument}
-                icon="document"
-                required
-              />
+              <div>
+                <Label>CIPC Company Registration Number (Optional)</Label>
+                <Input
+                  value={form.company_reg_number}
+                  onChange={e => setForm({ ...form, company_reg_number: e.target.value })}
+                  placeholder="e.g. 2024/123456/07"
+                  maxLength={20}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  If you have a registered company, enter your CIPC registration number
+                </p>
+              </div>
 
-              <DocumentUpload
-                label="Selfie for Verification"
-                description="Take a selfie holding your ID document next to your face"
-                accept="image/*"
-                value={selfiePhoto}
-                onChange={setSelfiePhoto}
-                icon="camera"
-                required
-              />
-
-              <DocumentUpload
-                label="Proof of Address"
-                description="Upload a utility bill, bank statement, or lease agreement (not older than 3 months)"
-                accept="image/*,.pdf"
-                value={proofOfAddress}
-                onChange={setProofOfAddress}
-                icon="document"
-                required
-              />
+              {/* Selfie Upload */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1">
+                  Selfie for Verification
+                  <span className="text-destructive">*</span>
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Take a clear selfie of your face for identity verification
+                </p>
+                
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="user"
+                  onChange={handleSelfieChange}
+                  className="hidden"
+                />
+                
+                {selfiePreview ? (
+                  <div className="relative w-40 h-40 rounded-xl overflow-hidden border-2 border-border">
+                    <img 
+                      src={selfiePreview} 
+                      alt="Selfie preview" 
+                      className="w-full h-full object-cover"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 w-8 h-8"
+                      onClick={removeSelfie}
+                    >
+                      <X size={16} />
+                    </Button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-40 h-40 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                      <Camera className="text-muted-foreground" size={24} />
+                    </div>
+                    <span className="text-sm font-medium text-foreground">Take Selfie</span>
+                    <span className="text-xs text-muted-foreground">or tap to upload</span>
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
@@ -343,9 +384,12 @@ export default function RestaurantRegister() {
                 <h3 className="font-semibold mb-2">{form.name}</h3>
                 <p className="text-sm text-muted-foreground">{form.cuisine_type} • {form.address}</p>
                 <p className="text-sm mt-2">{menuItems.length} menu items</p>
+                {form.company_reg_number && (
+                  <p className="text-sm text-muted-foreground mt-1">CIPC: {form.company_reg_number}</p>
+                )}
                 <div className="flex items-center gap-2 mt-2 text-sm text-primary">
                   <ShieldCheck size={16} />
-                  <span>Verification documents uploaded</span>
+                  <span>Identity verified</span>
                 </div>
               </div>
             </div>

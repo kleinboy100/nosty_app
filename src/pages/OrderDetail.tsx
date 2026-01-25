@@ -1,16 +1,18 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { OrderStatusTracker } from '@/components/OrderStatusTracker';
 import { OrderChat } from '@/components/OrderChat';
 import { ReviewForm } from '@/components/ReviewForm';
 import { PaymentMethodSelector } from '@/components/PaymentMethodSelector';
-import { DeliveryETA } from '@/components/DeliveryETA';
 import { supabase } from '@/integrations/supabase/client';
-import { Bell, XCircle, Star, Banknote, CreditCard, Loader2 } from 'lucide-react';
+import { Bell, XCircle, Star, Banknote, CreditCard, Loader2, MapPin } from 'lucide-react';
 import { usePushNotifications, ORDER_STATUS_MESSAGES } from '@/hooks/usePushNotifications';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+
+// Lazy load the map component to improve initial page load
+const DeliveryRouteMap = lazy(() => import('@/components/DeliveryRouteMap').then(m => ({ default: m.DeliveryRouteMap })));
 
 export default function OrderDetail() {
   const { id } = useParams();
@@ -245,20 +247,29 @@ export default function OrderDetail() {
           </div>
           <OrderStatusTracker status={order.status} />
 
-          {/* Delivery ETA - shows for active orders */}
+          {/* Delivery Route Map - shows for active orders */}
           {order.status !== 'delivered' && order.status !== 'cancelled' && order.status !== 'pending' && (
-            <DeliveryETA
-              status={order.status}
-              orderCreatedAt={order.created_at}
-              restaurantAddress={order.restaurants?.address}
-              customerAddress={order.delivery_address}
-              restaurantCoords={
-                order.restaurants?.latitude && order.restaurants?.longitude
-                  ? { lat: order.restaurants.latitude, lng: order.restaurants.longitude }
-                  : undefined
-              }
-              className="mt-6"
-            />
+            <Suspense fallback={
+              <div className="mt-6 bg-muted rounded-xl p-8 flex items-center justify-center">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Loading map...</span>
+                </div>
+              </div>
+            }>
+              <DeliveryRouteMap
+                status={order.status}
+                restaurantAddress={order.restaurants?.address}
+                customerAddress={order.delivery_address}
+                restaurantCoords={
+                  order.restaurants?.latitude && order.restaurants?.longitude
+                    ? { lat: order.restaurants.latitude, lng: order.restaurants.longitude }
+                    : undefined
+                }
+                restaurantName={order.restaurants?.name}
+                className="mt-6"
+              />
+            </Suspense>
           )}
           {/* Status Messages */}
           {order.status === 'pending' && (

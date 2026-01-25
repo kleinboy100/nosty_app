@@ -10,6 +10,7 @@ interface RequestBody {
   customerCoords?: { lat: number; lng: number };
   restaurantAddress?: string;
   customerAddress?: string;
+  includeRoute?: boolean;
 }
 
 // Geocode address using OpenStreetMap Nominatim (free, no API key needed)
@@ -38,24 +39,35 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lng: numb
   }
 }
 
-// Calculate distance and duration using OSRM (free, no API key needed)
+// Calculate distance and duration using OSRM with optional geometry
 async function calculateRoute(
   fromCoords: { lat: number; lng: number },
-  toCoords: { lat: number; lng: number }
-): Promise<{ distanceKm: number; durationMinutes: number } | null> {
+  toCoords: { lat: number; lng: number },
+  includeGeometry: boolean = false
+): Promise<{ distanceKm: number; durationMinutes: number; route?: [number, number][] } | null> {
   try {
     // OSRM public API for driving directions
-    const url = `https://router.project-osrm.org/route/v1/driving/${fromCoords.lng},${fromCoords.lat};${toCoords.lng},${toCoords.lat}?overview=false`;
+    const overview = includeGeometry ? 'full' : 'false';
+    const geometries = includeGeometry ? 'geojson' : 'polyline';
+    const url = `https://router.project-osrm.org/route/v1/driving/${fromCoords.lng},${fromCoords.lat};${toCoords.lng},${toCoords.lat}?overview=${overview}&geometries=${geometries}`;
     
     const response = await fetch(url);
     const data = await response.json();
     
     if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
-      const route = data.routes[0];
-      return {
-        distanceKm: Math.round((route.distance / 1000) * 10) / 10, // meters to km
-        durationMinutes: Math.ceil(route.duration / 60) // seconds to minutes
+      const osrmRoute = data.routes[0];
+      const result: { distanceKm: number; durationMinutes: number; route?: [number, number][] } = {
+        distanceKm: Math.round((osrmRoute.distance / 1000) * 10) / 10,
+        durationMinutes: Math.ceil(osrmRoute.duration / 60)
       };
+      
+      // Extract route geometry if requested
+      if (includeGeometry && osrmRoute.geometry && osrmRoute.geometry.coordinates) {
+        // GeoJSON coordinates are [lng, lat], we need [lat, lng] for Leaflet
+        result.route = osrmRoute.geometry.coordinates.map((coord: [number, number]) => [coord[1], coord[0]]);
+      }
+      
+      return result;
     }
     return null;
   } catch (error) {
@@ -69,7 +81,7 @@ function haversineDistance(
   coords1: { lat: number; lng: number },
   coords2: { lat: number; lng: number }
 ): number {
-  const R = 6371; // Earth's radius in km
+  const R = 6371;
   const dLat = (coords2.lat - coords1.lat) * Math.PI / 180;
   const dLon = (coords2.lng - coords1.lng) * Math.PI / 180;
   const a = 
@@ -80,8 +92,26 @@ function haversineDistance(
   return R * c;
 }
 
+// Generate a simple straight-line route
+function generateStraightLineRoute(
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number }
+): [number, number][] {
+  const points: [number, number][] = [];
+  const steps = 20;
+  
+  for (let i = 0; i <= steps; i++) {
+    const ratio = i / steps;
+    points.push([
+      from.lat + (to.lat - from.lat) * ratio,
+      from.lng + (to.lng - from.lng) * ratio
+    ]);
+  }
+  
+  return points;
+}
+
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -92,6 +122,7 @@ serve(async (req) => {
 
     let restaurantCoords: { lat: number; lng: number } | null = body.restaurantCoords || null;
     let customerCoords: { lat: number; lng: number } | null = body.customerCoords || null;
+    const includeRoute = body.includeRoute || false;
 
     // Geocode restaurant address if coordinates not provided
     if (!restaurantCoords && body.restaurantAddress) {
@@ -99,8 +130,6 @@ serve(async (req) => {
       restaurantCoords = await geocodeAddress(body.restaurantAddress);
       if (restaurantCoords) {
         console.log("Restaurant geocoded:", restaurantCoords);
-      } else {
-        console.log("Failed to geocode restaurant address");
       }
     }
 
@@ -110,8 +139,6 @@ serve(async (req) => {
       customerCoords = await geocodeAddress(body.customerAddress);
       if (customerCoords) {
         console.log("Customer geocoded:", customerCoords);
-      } else {
-        console.log("Failed to geocode customer address");
       }
     }
 
@@ -131,15 +158,18 @@ serve(async (req) => {
 
     // Try OSRM for accurate driving distance/duration
     console.log("Calculating route via OSRM...");
-    const routeResult = await calculateRoute(restaurantCoords, customerCoords);
+    const routeResult = await calculateRoute(restaurantCoords, customerCoords, includeRoute);
     
     if (routeResult) {
-      console.log("OSRM route calculated:", routeResult);
+      console.log("OSRM route calculated:", { ...routeResult, route: routeResult.route ? `${routeResult.route.length} points` : 'none' });
       return new Response(
         JSON.stringify({
           distanceKm: routeResult.distanceKm,
           durationMinutes: routeResult.durationMinutes,
-          method: 'driving'
+          method: 'driving',
+          restaurantCoords,
+          customerCoords,
+          route: routeResult.route
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -148,14 +178,16 @@ serve(async (req) => {
     // Fallback to straight-line distance with estimated drive time
     console.log("OSRM failed, using straight-line fallback");
     const distanceKm = haversineDistance(restaurantCoords, customerCoords);
-    // Estimate 2.5 min per km for urban driving (accounts for traffic, turns, etc.)
     const durationMinutes = Math.ceil(distanceKm * 2.5);
 
     return new Response(
       JSON.stringify({ 
         distanceKm: Math.round(distanceKm * 10) / 10,
-        durationMinutes: Math.max(5, durationMinutes), // minimum 5 minutes
-        method: 'straight-line'
+        durationMinutes: Math.max(5, durationMinutes),
+        method: 'straight-line',
+        restaurantCoords,
+        customerCoords,
+        route: includeRoute ? generateStraightLineRoute(restaurantCoords, customerCoords) : undefined
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
