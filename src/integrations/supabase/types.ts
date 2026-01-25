@@ -151,6 +151,7 @@ export type Database = {
           delivery_address: string
           id: string
           notes: string | null
+          order_type: string
           payment_confirmed: boolean | null
           payment_method: string | null
           restaurant_id: string
@@ -164,6 +165,7 @@ export type Database = {
           delivery_address: string
           id?: string
           notes?: string | null
+          order_type?: string
           payment_confirmed?: boolean | null
           payment_method?: string | null
           restaurant_id: string
@@ -177,6 +179,7 @@ export type Database = {
           delivery_address?: string
           id?: string
           notes?: string | null
+          order_type?: string
           payment_confirmed?: boolean | null
           payment_method?: string | null
           restaurant_id?: string
