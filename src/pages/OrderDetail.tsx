@@ -59,16 +59,49 @@ export default function OrderDetail() {
     }
   }, [searchParams, toast]);
 
-  // Watch for payment confirmation via realtime
+  // Poll for payment confirmation when awaiting
   useEffect(() => {
-    if (awaitingPaymentConfirmation && order?.payment_confirmed) {
+    if (!awaitingPaymentConfirmation || !id) return;
+    
+    // If already confirmed via realtime, stop polling
+    if (order?.payment_confirmed) {
       setAwaitingPaymentConfirmation(false);
       toast({
         title: "Payment confirmed! ✓",
         description: "Your payment has been processed successfully."
       });
+      return;
     }
-  }, [order?.payment_confirmed, awaitingPaymentConfirmation, toast]);
+    
+    // Poll every 2 seconds for payment confirmation
+    const pollInterval = setInterval(async () => {
+      const { data } = await supabase
+        .from('orders')
+        .select('payment_confirmed, payment_method')
+        .eq('id', id)
+        .single();
+      
+      if (data?.payment_confirmed) {
+        setOrder((prev: any) => ({ ...prev, payment_confirmed: true, payment_method: data.payment_method }));
+        setAwaitingPaymentConfirmation(false);
+        toast({
+          title: "Payment confirmed! ✓",
+          description: "Your payment has been processed successfully."
+        });
+        clearInterval(pollInterval);
+      }
+    }, 2000);
+    
+    // Stop polling after 60 seconds
+    const timeout = setTimeout(() => {
+      clearInterval(pollInterval);
+    }, 60000);
+    
+    return () => {
+      clearInterval(pollInterval);
+      clearTimeout(timeout);
+    };
+  }, [awaitingPaymentConfirmation, id, order?.payment_confirmed, toast]);
 
   useEffect(() => {
     if (id) {
