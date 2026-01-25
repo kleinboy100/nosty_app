@@ -39,6 +39,7 @@ export function MenuManager({ restaurantId }: MenuManagerProps) {
     price: '',
     category: 'Mains',
     is_available: true,
+    image_url: '',
   });
 
   useEffect(() => {
@@ -62,7 +63,7 @@ export function MenuManager({ restaurantId }: MenuManagerProps) {
   };
 
   const resetForm = () => {
-    setForm({ name: '', description: '', price: '', category: 'Mains', is_available: true });
+    setForm({ name: '', description: '', price: '', category: 'Mains', is_available: true, image_url: '' });
     setEditingItem(null);
   };
 
@@ -79,6 +80,7 @@ export function MenuManager({ restaurantId }: MenuManagerProps) {
       price: item.price.toString(),
       category: item.category,
       is_available: item.is_available ?? true,
+      image_url: item.image_url || '',
     });
     setDialogOpen(true);
   };
@@ -102,6 +104,7 @@ export function MenuManager({ restaurantId }: MenuManagerProps) {
             price: parseFloat(form.price),
             category: form.category,
             is_available: form.is_available,
+            image_url: form.image_url || null,
           })
           .eq('id', editingItem.id);
 
@@ -118,6 +121,7 @@ export function MenuManager({ restaurantId }: MenuManagerProps) {
             price: parseFloat(form.price),
             category: form.category,
             is_available: form.is_available,
+            image_url: form.image_url || null,
           });
 
         if (error) throw error;
@@ -212,6 +216,24 @@ export function MenuManager({ restaurantId }: MenuManagerProps) {
                   placeholder="Describe this dish..."
                   rows={2}
                 />
+              </div>
+              <div>
+                <Label>Image URL</Label>
+                <Input
+                  value={form.image_url}
+                  onChange={e => setForm({ ...form, image_url: e.target.value })}
+                  placeholder="https://example.com/image.jpg"
+                />
+                {form.image_url && (
+                  <div className="mt-2 rounded-md overflow-hidden border h-24 w-24">
+                    <img 
+                      src={form.image_url} 
+                      alt="Preview" 
+                      className="w-full h-full object-cover"
+                      onError={(e) => (e.currentTarget.style.display = 'none')}
+                    />
+                  </div>
+                )}
               </div>
               <div>
                 <Label>Category</Label>
