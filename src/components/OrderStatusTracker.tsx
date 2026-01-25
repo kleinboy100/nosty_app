@@ -1,14 +1,16 @@
-import { Check, Clock, ChefHat, Package, Truck, Home } from 'lucide-react';
+import { Check, Clock, ChefHat, Package, Truck, Home, Store } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'out_for_delivery' | 'delivered' | 'cancelled';
+type OrderType = 'delivery' | 'collection';
 
 interface OrderStatusTrackerProps {
   status: OrderStatus;
+  orderType?: OrderType;
   className?: string;
 }
 
-const steps = [
+const deliverySteps = [
   { status: 'pending', label: 'Order Placed', icon: Clock },
   { status: 'confirmed', label: 'Confirmed', icon: Check },
   { status: 'preparing', label: 'Preparing', icon: ChefHat },
@@ -17,7 +19,15 @@ const steps = [
   { status: 'delivered', label: 'Delivered', icon: Home },
 ];
 
-export function OrderStatusTracker({ status, className }: OrderStatusTrackerProps) {
+const collectionSteps = [
+  { status: 'pending', label: 'Order Placed', icon: Clock },
+  { status: 'confirmed', label: 'Confirmed', icon: Check },
+  { status: 'preparing', label: 'Preparing', icon: ChefHat },
+  { status: 'ready', label: 'Ready for Pickup', icon: Package },
+  { status: 'delivered', label: 'Collected', icon: Store },
+];
+
+export function OrderStatusTracker({ status, orderType = 'delivery', className }: OrderStatusTrackerProps) {
   if (status === 'cancelled') {
     return (
       <div className={cn("bg-destructive/10 border border-destructive/20 rounded-lg p-4 text-center", className)}>
@@ -26,7 +36,15 @@ export function OrderStatusTracker({ status, className }: OrderStatusTrackerProp
     );
   }
 
-  const currentStepIndex = steps.findIndex(s => s.status === status);
+  const steps = orderType === 'collection' ? collectionSteps : deliverySteps;
+  
+  // Map out_for_delivery to ready for collection orders when calculating step index
+  let mappedStatus = status;
+  if (orderType === 'collection' && status === 'out_for_delivery') {
+    mappedStatus = 'ready';
+  }
+  
+  const currentStepIndex = steps.findIndex(s => s.status === mappedStatus);
 
   return (
     <div className={cn("py-4", className)}>

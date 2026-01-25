@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Home, ClipboardList, ShoppingCart, MoreHorizontal, User, Store, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
+import { useIsRestaurantOwner } from '@/hooks/useIsRestaurantOwner';
 import { cn } from '@/lib/utils';
 
 export function BottomNav() {
@@ -10,6 +11,7 @@ export function BottomNav() {
   const { itemCount } = useCart();
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
+  const { isOwner } = useIsRestaurantOwner();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -17,7 +19,8 @@ export function BottomNav() {
     { to: '/', icon: Home, label: 'Home', show: true },
     { to: '/orders', icon: ClipboardList, label: 'Orders', show: !!user },
     { to: '/cart', icon: ShoppingCart, label: 'Cart', show: true, badge: itemCount },
-    { to: '/restaurant/dashboard', icon: Store, label: 'Dashboard', show: !!user },
+    // Only show Dashboard to restaurant owners
+    { to: '/restaurant/dashboard', icon: Store, label: 'Dashboard', show: !!user && isOwner },
   ];
 
   const visibleItems = navItems.filter(item => item.show);

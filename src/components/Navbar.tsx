@@ -3,11 +3,13 @@ import { ShoppingCart, User, LogOut, Store, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
+import { useIsRestaurantOwner } from '@/hooks/useIsRestaurantOwner';
 
 export function Navbar() {
   const { user, signOut } = useAuth();
   const { itemCount } = useCart();
   const navigate = useNavigate();
+  const { isOwner } = useIsRestaurantOwner();
 
   const handleSignOut = async () => {
     await signOut();
@@ -30,7 +32,7 @@ export function Navbar() {
               to="/" 
               className="text-muted-foreground hover:text-foreground transition-colors font-medium"
             >
-              Restaurants
+              Menu
             </Link>
             {user && (
               <>
@@ -41,13 +43,16 @@ export function Navbar() {
                   <ClipboardList size={18} />
                   My Orders
                 </Link>
-                <Link 
-                  to="/restaurant/dashboard" 
-                  className="text-muted-foreground hover:text-foreground transition-colors font-medium flex items-center gap-1"
-                >
-                  <Store size={18} />
-                  Restaurant Dashboard
-                </Link>
+                {/* Only show Dashboard to restaurant owners */}
+                {isOwner && (
+                  <Link 
+                    to="/restaurant/dashboard" 
+                    className="text-muted-foreground hover:text-foreground transition-colors font-medium flex items-center gap-1"
+                  >
+                    <Store size={18} />
+                    Dashboard
+                  </Link>
+                )}
               </>
             )}
           </div>

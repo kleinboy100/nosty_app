@@ -441,16 +441,28 @@ export type Database = {
       }
     }
     Functions: {
-      create_validated_order: {
-        Args: {
-          p_delivery_address: string
-          p_items: Json
-          p_notes: string
-          p_payment_method: string
-          p_restaurant_id: string
-        }
-        Returns: string
-      }
+      create_validated_order:
+        | {
+            Args: {
+              p_delivery_address: string
+              p_items: Json
+              p_notes: string
+              p_payment_method: string
+              p_restaurant_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_delivery_address: string
+              p_items: Json
+              p_notes: string
+              p_order_type?: string
+              p_payment_method: string
+              p_restaurant_id: string
+            }
+            Returns: string
+          }
       owner_has_payment_keys: {
         Args: { p_restaurant_id: string }
         Returns: boolean

@@ -101,7 +101,7 @@ export default function OrderDetail() {
 
   const fetchOrder = async () => {
     const [orderRes, itemsRes] = await Promise.all([
-      supabase.from('orders').select('*, restaurants(name, address, latitude, longitude)').eq('id', id).single(),
+      supabase.from('orders').select('*, restaurants(name, address, latitude, longitude)').eq('id', id).maybeSingle(),
       supabase.from('order_items').select('*').eq('order_id', id)
     ]);
     setOrder(orderRes.data);
@@ -243,10 +243,10 @@ export default function OrderDetail() {
               <OrderChat orderId={order.id} userType="customer" />
             )}
           </div>
-          <OrderStatusTracker status={order.status} />
+          <OrderStatusTracker status={order.status} orderType={order.order_type || 'delivery'} />
 
-          {/* Delivery ETA - shows for active orders */}
-          {order.status !== 'delivered' && order.status !== 'cancelled' && order.status !== 'pending' && (
+          {/* Delivery ETA - shows for active delivery orders only */}
+          {order.order_type !== 'collection' && order.status !== 'delivered' && order.status !== 'cancelled' && order.status !== 'pending' && (
             <DeliveryETA
               status={order.status}
               orderCreatedAt={order.created_at}
@@ -259,6 +259,15 @@ export default function OrderDetail() {
               }
               className="mt-6"
             />
+          )}
+          
+          {/* Collection Ready message */}
+          {order.order_type === 'collection' && order.status === 'ready' && (
+            <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3">
+              <p className="text-sm text-green-800">
+                🎉 Your order is ready for collection! Head to {order.restaurants?.name || 'the store'} to pick it up.
+              </p>
+            </div>
           )}
           {/* Status Messages */}
           {order.status === 'pending' && (
@@ -420,7 +429,9 @@ export default function OrderDetail() {
             <span>R{Number(order.total_amount).toFixed(2)}</span>
           </div>
           <div className="mt-4 pt-4 border-t space-y-2">
-            <p className="text-sm text-muted-foreground">Delivery: {order.delivery_address}</p>
+            <p className="text-sm text-muted-foreground">
+              {order.order_type === 'collection' ? 'Collection at: ' : 'Delivery: '}{order.delivery_address}
+            </p>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Banknote size={16} />
               <span>Payment: {order.payment_confirmed ? (order.payment_method === 'cash' ? 'Cash on Delivery' : 'Paid Online') : 'Pending selection'}</span>
