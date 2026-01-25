@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,7 +8,7 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, Upload, X } from 'lucide-react';
 
 interface MenuItem {
   id: string;
@@ -41,6 +41,10 @@ export function MenuManager({ restaurantId }: MenuManagerProps) {
     is_available: true,
     image_url: '',
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchMenuItems();
@@ -65,6 +69,8 @@ export function MenuManager({ restaurantId }: MenuManagerProps) {
   const resetForm = () => {
     setForm({ name: '', description: '', price: '', category: 'Mains', is_available: true, image_url: '' });
     setEditingItem(null);
+    setImageFile(null);
+    setImagePreview(null);
   };
 
   const openAddDialog = () => {
@@ -82,7 +88,54 @@ export function MenuManager({ restaurantId }: MenuManagerProps) {
       is_available: item.is_available ?? true,
       image_url: item.image_url || '',
     });
+    setImageFile(null);
+    setImagePreview(item.image_url || null);
     setDialogOpen(true);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast({ title: 'Invalid file', description: 'Please select an image file', variant: 'destructive' });
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast({ title: 'File too large', description: 'Image must be less than 5MB', variant: 'destructive' });
+        return;
+      }
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setForm({ ...form, image_url: '' });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${restaurantId}/${crypto.randomUUID()}.${fileExt}`;
+    
+    const { error: uploadError } = await supabase.storage
+      .from('menu-images')
+      .upload(fileName, file, { cacheControl: '3600', upsert: false });
+
+    if (uploadError) {
+      console.error('Upload error:', uploadError);
+      throw uploadError;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('menu-images')
+      .getPublicUrl(fileName);
+
+    return publicUrl;
   };
 
   const handleSave = async () => {
@@ -94,6 +147,22 @@ export function MenuManager({ restaurantId }: MenuManagerProps) {
     setSaving(true);
 
     try {
+      let imageUrl = form.image_url;
+
+      // Upload new image if selected
+      if (imageFile) {
+        setUploading(true);
+        try {
+          imageUrl = await uploadImage(imageFile) || '';
+        } catch (uploadErr) {
+          toast({ title: 'Upload failed', description: 'Failed to upload image', variant: 'destructive' });
+          setSaving(false);
+          setUploading(false);
+          return;
+        }
+        setUploading(false);
+      }
+
       if (editingItem) {
         // Update existing item
         const { error } = await supabase
@@ -104,7 +173,7 @@ export function MenuManager({ restaurantId }: MenuManagerProps) {
             price: parseFloat(form.price),
             category: form.category,
             is_available: form.is_available,
-            image_url: form.image_url || null,
+            image_url: imageUrl || null,
           })
           .eq('id', editingItem.id);
 
@@ -121,7 +190,7 @@ export function MenuManager({ restaurantId }: MenuManagerProps) {
             price: parseFloat(form.price),
             category: form.category,
             is_available: form.is_available,
-            image_url: form.image_url || null,
+            image_url: imageUrl || null,
           });
 
         if (error) throw error;
@@ -218,21 +287,48 @@ export function MenuManager({ restaurantId }: MenuManagerProps) {
                 />
               </div>
               <div>
-                <Label>Image URL</Label>
-                <Input
-                  value={form.image_url}
-                  onChange={e => setForm({ ...form, image_url: e.target.value })}
-                  placeholder="https://example.com/image.jpg"
+                <Label>Meal Picture</Label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
                 />
-                {form.image_url && (
-                  <div className="mt-2 rounded-md overflow-hidden border h-24 w-24">
-                    <img 
-                      src={form.image_url} 
-                      alt="Preview" 
-                      className="w-full h-full object-cover"
-                      onError={(e) => (e.currentTarget.style.display = 'none')}
-                    />
+                {imagePreview ? (
+                  <div className="mt-2 relative inline-block">
+                    <div className="rounded-md overflow-hidden border h-24 w-24">
+                      <img 
+                        src={imagePreview} 
+                        alt="Preview" 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute -top-2 -right-2 h-6 w-6"
+                      onClick={removeImage}
+                    >
+                      <X size={14} />
+                    </Button>
                   </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="mt-2 w-full"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload size={16} className="mr-2" />
+                    Upload Image
+                  </Button>
+                )}
+                {uploading && (
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    <Loader2 size={12} className="animate-spin" /> Uploading...
+                  </p>
                 )}
               </div>
               <div>
