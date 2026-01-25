@@ -59,13 +59,23 @@ export default function RestaurantDashboard() {
           schema: 'public',
           table: 'orders',
           filter: `restaurant_id=eq.${selectedRestaurant}`
-        }, () => {
-          fetchOrders();
+        }, (payload) => {
+          const updatedOrder = payload.new as any;
+          // Update the specific order in state for faster UI response
+          setOrders(prev => prev.map(o => 
+            o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o
+          ));
         })
         .subscribe();
 
+      // Poll for payment updates every 5 seconds (catches webhook updates)
+      const pollInterval = setInterval(() => {
+        fetchOrders();
+      }, 5000);
+
       return () => {
         supabase.removeChannel(channel);
+        clearInterval(pollInterval);
       };
     }
   }, [selectedRestaurant, showNotification]);
