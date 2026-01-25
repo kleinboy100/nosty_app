@@ -91,15 +91,31 @@ Deno.serve(async (req) => {
         console.error('Payment update error:', paymentError);
       }
 
-      // Update order status to confirmed if payment succeeded
-      if (orderId) {
+      // Find order from payment record if not in metadata
+      let targetOrderId = orderId;
+      if (!targetOrderId) {
+        const { data: paymentData } = await supabase
+          .from('payments')
+          .select('order_id')
+          .eq('yoco_checkout_id', checkoutId)
+          .single();
+        targetOrderId = paymentData?.order_id;
+      }
+
+      // Update order: set payment_confirmed = true and payment_method = online
+      if (targetOrderId) {
         const { error: orderError } = await supabase
           .from('orders')
-          .update({ status: 'pending' }) // Keep as pending for restaurant to confirm
-          .eq('id', orderId);
+          .update({ 
+            payment_method: 'online',
+            payment_confirmed: true
+          })
+          .eq('id', targetOrderId);
 
         if (orderError) {
           console.error('Order update error:', orderError);
+        } else {
+          console.log('Order payment_confirmed set to true for:', targetOrderId);
         }
       }
 
