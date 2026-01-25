@@ -1,54 +1,69 @@
 import { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { RestaurantCard } from '@/components/RestaurantCard';
+import { KFCMenuItem } from '@/components/KFCMenuItem';
 import { HeroSlideshow } from '@/components/HeroSlideshow';
 import { supabase } from '@/integrations/supabase/client';
+
+// Nosty's restaurant ID
+const NOSTY_RESTAURANT_ID = '7f5250bb-263f-4bca-a4af-d325f761542b';
+
+interface MenuItemType {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  image_url: string | null;
+  category: string;
+}
 
 interface Restaurant {
   id: string;
   name: string;
-  description: string | null;
-  cuisine_type: string;
-  address: string;
-  image_url: string | null;
-  rating: number;
-  average_prep_time: number;
 }
 
-const cuisineTypes = ['All', 'Kasi Food', 'Braai & Grill', 'Bunny Chow', 'Pap & Vleis', 'Gatsby', 'Vetkoek', 'Shisanyama', 'Traditional', 'Fast Food'];
+const mealCategories = ['All', 'Mains', 'Sides', 'Drinks', 'Desserts', 'Combos', 'Specials'];
 
 export default function Index() {
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCuisine, setSelectedCuisine] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState('All');
 
   useEffect(() => {
-    fetchRestaurants();
+    fetchData();
   }, []);
 
-  const fetchRestaurants = async () => {
-    // Use public view to avoid exposing sensitive data (phone, owner_id, yoco keys)
-    const { data, error } = await supabase
-      .from('restaurants_public')
-      .select('*')
-      .order('created_at', { ascending: false });
+  const fetchData = async () => {
+    const [restaurantRes, menuRes] = await Promise.all([
+      supabase.from('restaurants_public').select('id, name').eq('id', NOSTY_RESTAURANT_ID).maybeSingle(),
+      supabase.from('menu_items').select('*').eq('restaurant_id', NOSTY_RESTAURANT_ID).eq('is_available', true)
+    ]);
 
-    if (error) {
-      console.error('Error fetching restaurants:', error);
+    if (restaurantRes.error) {
+      console.error('Error fetching restaurant:', restaurantRes.error);
     } else {
-      setRestaurants(data || []);
+      setRestaurant(restaurantRes.data);
+    }
+
+    if (menuRes.error) {
+      console.error('Error fetching menu:', menuRes.error);
+    } else {
+      setMenuItems(menuRes.data || []);
     }
     setLoading(false);
   };
 
-  const filteredRestaurants = restaurants.filter(restaurant => {
-    const matchesSearch = restaurant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      restaurant.cuisine_type.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCuisine = selectedCuisine === 'All' || restaurant.cuisine_type === selectedCuisine;
-    return matchesSearch && matchesCuisine;
+  const filteredItems = menuItems.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.description?.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
+    return matchesSearch && matchesCategory;
   });
+
+  // Get available categories from menu items
+  const availableCategories = ['All', ...new Set(menuItems.map(item => item.category))];
 
   return (
     <div className="min-h-screen">
@@ -58,18 +73,18 @@ export default function Index() {
         <div className="relative container mx-auto px-4 h-full flex flex-col justify-center z-10">
           <div className="max-w-xl">
             <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-card mb-4 animate-fade-in">
-              Mzansi flavors,
+              Fresh & Fast,
               <br />
-              <span className="text-primary">straight to you</span>
+              <span className="text-primary">just how you like it</span>
             </h1>
             <p className="text-card/80 text-lg mb-8 animate-fade-in">
-              Order from the best local kasi takeaways and restaurants across South Africa.
+              Explore our delicious menu and order your favorite meals today.
             </p>
             <div className="flex gap-4 animate-slide-up">
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
                 <Input
-                  placeholder="Search takeaways, kasi spots..."
+                  placeholder="Search meals, combos..."
                   className="pl-10 h-12 bg-card border-0 shadow-lg"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -80,63 +95,64 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Cuisine Filters */}
+      {/* Category Filters */}
       <section className="py-6 border-b border-border">
         <div className="container mx-auto px-4">
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            {cuisineTypes.map(cuisine => (
+            {availableCategories.map(category => (
               <button
-                key={cuisine}
-                onClick={() => setSelectedCuisine(cuisine)}
+                key={category}
+                onClick={() => setSelectedCategory(category)}
                 className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                  selectedCuisine === cuisine
+                  selectedCategory === category
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                 }`}
               >
-                {cuisine}
+                {category}
               </button>
             ))}
           </div>
         </div>
       </section>
+
+      {/* Menu Items */}
       <section className="py-8">
         <div className="container mx-auto px-4">
           <h2 className="font-display text-2xl font-bold text-foreground mb-6">
-            {selectedCuisine === 'All' ? 'All Takeaways & Restaurants' : `${selectedCuisine} Spots`}
+            {selectedCategory === 'All' ? 'Our Menu' : selectedCategory}
           </h2>
           
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {[...Array(8)].map((_, i) => (
                 <div key={i} className="card-elevated overflow-hidden">
-                  <div className="h-48 bg-muted animate-pulse" />
-                  <div className="p-4 space-y-3">
-                    <div className="h-5 bg-muted rounded animate-pulse w-3/4" />
-                    <div className="h-4 bg-muted rounded animate-pulse w-full" />
-                    <div className="h-4 bg-muted rounded animate-pulse w-1/2" />
+                  <div className="aspect-square bg-muted animate-pulse" />
+                  <div className="p-3 space-y-2">
+                    <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
+                    <div className="h-3 bg-muted rounded animate-pulse w-1/2" />
                   </div>
                 </div>
               ))}
             </div>
-          ) : filteredRestaurants.length === 0 ? (
+          ) : filteredItems.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground text-lg">No takeaways found</p>
-              <p className="text-muted-foreground text-sm mt-2">Try adjusting your search or filters</p>
+              <p className="text-muted-foreground text-lg">No meals found</p>
+              <p className="text-muted-foreground text-sm mt-2">Try adjusting your search or category</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredRestaurants.map(restaurant => (
-                <RestaurantCard
-                  key={restaurant.id}
-                  id={restaurant.id}
-                  name={restaurant.name}
-                  description={restaurant.description}
-                  cuisineType={restaurant.cuisine_type}
-                  address={restaurant.address}
-                  imageUrl={restaurant.image_url}
-                  rating={Number(restaurant.rating)}
-                  averagePrepTime={restaurant.average_prep_time}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {filteredItems.map(item => (
+                <KFCMenuItem
+                  key={item.id}
+                  id={item.id}
+                  name={item.name}
+                  description={item.description}
+                  price={Number(item.price)}
+                  imageUrl={item.image_url}
+                  category={item.category}
+                  restaurantId={restaurant?.id || NOSTY_RESTAURANT_ID}
+                  restaurantName={restaurant?.name || "Nosty's Fresh Fast Food"}
                 />
               ))}
             </div>
