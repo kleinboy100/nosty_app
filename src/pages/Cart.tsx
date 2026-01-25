@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
+import { OrderTypeSelector } from '@/components/OrderTypeSelector';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function Cart() {
@@ -18,6 +19,7 @@ export default function Cart() {
   const navigate = useNavigate();
   const { permission, requestPermission, supported } = usePushNotifications();
   
+  const [orderType, setOrderType] = useState<'delivery' | 'collection'>('delivery');
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [notes, setNotes] = useState('');
@@ -50,7 +52,7 @@ export default function Cart() {
       return;
     }
 
-    if (!deliveryAddress.trim()) {
+    if (orderType === 'delivery' && !deliveryAddress.trim()) {
       toast({
         title: "Delivery address required",
         description: "Please enter your delivery address.",
@@ -74,13 +76,14 @@ export default function Cart() {
       // Create order with pending status - payment method will be selected after restaurant approval
       const { data: orderId, error: orderError } = await supabase.rpc('create_validated_order', {
         p_restaurant_id: restaurantId,
-        p_delivery_address: deliveryAddress,
+        p_delivery_address: orderType === 'delivery' ? deliveryAddress : 'Collection at store',
         p_notes: notes || null,
         p_payment_method: 'cash', // Default to cash, will be updated after approval
         p_items: items.map(item => ({
           menu_item_id: item.menuItemId,
           quantity: item.quantity
-        }))
+        })),
+        p_order_type: orderType
       });
 
       if (orderError) {
@@ -220,16 +223,36 @@ export default function Cart() {
               )}
 
               <div className="space-y-4 mb-6">
+                {/* Order Type Selector */}
                 <div className="space-y-2">
-                  <Label>Delivery Address *</Label>
-                  <AddressAutocomplete
-                    value={deliveryAddress}
-                    onChange={setDeliveryAddress}
-                    onCoordinatesChange={setDeliveryCoords}
-                    placeholder="Search for your address"
-                    showLocationButton={true}
-                  />
+                  <Label>Order Type *</Label>
+                  <OrderTypeSelector value={orderType} onChange={setOrderType} />
                 </div>
+
+                {/* Delivery Address - only show for delivery orders */}
+                {orderType === 'delivery' && (
+                  <div className="space-y-2">
+                    <Label>Delivery Address *</Label>
+                    <AddressAutocomplete
+                      value={deliveryAddress}
+                      onChange={setDeliveryAddress}
+                      onCoordinatesChange={setDeliveryCoords}
+                      placeholder="Search for your address"
+                      showLocationButton={true}
+                    />
+                  </div>
+                )}
+
+                {/* Collection info */}
+                {orderType === 'collection' && (
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <p className="text-sm font-medium mb-1">📍 Pickup Location</p>
+                    <p className="text-sm text-muted-foreground">
+                      {items[0]?.restaurantName} - We'll have your order ready for collection!
+                    </p>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="notes">Order Notes (optional)</Label>
                   <Textarea
@@ -254,13 +277,15 @@ export default function Cart() {
                   <span>Subtotal</span>
                   <span>R{total.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Delivery Fee</span>
-                  <span>R25.00</span>
-                </div>
+                {orderType === 'delivery' && (
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Delivery Fee</span>
+                    <span>R25.00</span>
+                  </div>
+                )}
                 <div className="flex justify-between font-semibold text-foreground text-lg pt-2 border-t border-border">
                   <span>Total</span>
-                  <span>R{(total + 25).toFixed(2)}</span>
+                  <span>R{(orderType === 'delivery' ? total + 25 : total).toFixed(2)}</span>
                 </div>
               </div>
 

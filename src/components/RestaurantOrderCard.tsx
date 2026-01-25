@@ -21,6 +21,7 @@ interface Order {
   order_items?: OrderItem[];
   payment_method?: string;
   payment_confirmed?: boolean;
+  order_type?: 'delivery' | 'collection';
 }
 
 interface RestaurantOrderCardProps {
@@ -29,7 +30,8 @@ interface RestaurantOrderCardProps {
   isNew?: boolean;
 }
 
-const statusFlow = [
+// Status flow for delivery orders
+const deliveryStatusFlow = [
   { status: 'confirmed', label: 'Accept Order', icon: Check, color: 'bg-green-500 hover:bg-green-600' },
   { status: 'preparing', label: 'Start Preparing', icon: ChefHat, color: 'bg-orange-500 hover:bg-orange-600' },
   { status: 'ready', label: 'Ready for Pickup', icon: Package, color: 'bg-blue-500 hover:bg-blue-600' },
@@ -37,7 +39,16 @@ const statusFlow = [
   { status: 'delivered', label: 'Mark Delivered', icon: Home, color: 'bg-green-600 hover:bg-green-700' },
 ];
 
-const getNextAction = (currentStatus: string) => {
+// Status flow for collection orders (no out_for_delivery step)
+const collectionStatusFlow = [
+  { status: 'confirmed', label: 'Accept Order', icon: Check, color: 'bg-green-500 hover:bg-green-600' },
+  { status: 'preparing', label: 'Start Preparing', icon: ChefHat, color: 'bg-orange-500 hover:bg-orange-600' },
+  { status: 'ready', label: 'Ready for Pickup', icon: Package, color: 'bg-blue-500 hover:bg-blue-600' },
+  { status: 'delivered', label: 'Mark Collected', icon: Home, color: 'bg-green-600 hover:bg-green-700' },
+];
+
+const getNextAction = (currentStatus: string, orderType: 'delivery' | 'collection' = 'delivery') => {
+  const statusFlow = orderType === 'collection' ? collectionStatusFlow : deliveryStatusFlow;
   const currentIndex = statusFlow.findIndex(s => s.status === currentStatus);
   if (currentStatus === 'pending') return statusFlow[0]; // Accept order
   if (currentIndex >= 0 && currentIndex < statusFlow.length - 1) {
@@ -48,7 +59,8 @@ const getNextAction = (currentStatus: string) => {
 
 export function RestaurantOrderCard({ order, onUpdateStatus, isNew }: RestaurantOrderCardProps) {
   const [loading, setLoading] = useState(false);
-  const nextAction = getNextAction(order.status);
+  const orderType = order.order_type || 'delivery';
+  const nextAction = getNextAction(order.status, orderType);
 
   const handleAction = async (status: string) => {
     setLoading(true);
@@ -74,7 +86,7 @@ export function RestaurantOrderCard({ order, onUpdateStatus, isNew }: Restaurant
       {/* Header */}
       <div className="flex justify-between items-start mb-3">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <p className="font-semibold">Order #{order.id.slice(0, 8)}</p>
             {isNew && (
               <span className="flex items-center gap-1 bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full">
@@ -82,6 +94,14 @@ export function RestaurantOrderCard({ order, onUpdateStatus, isNew }: Restaurant
                 New Order
               </span>
             )}
+            <span className={cn(
+              "text-xs px-2 py-0.5 rounded-full",
+              orderType === 'collection' 
+                ? "bg-blue-100 text-blue-800" 
+                : "bg-purple-100 text-purple-800"
+            )}>
+              {orderType === 'collection' ? '📦 Collection' : '🚚 Delivery'}
+            </span>
           </div>
           <p className="text-sm text-muted-foreground">
             {new Date(order.created_at).toLocaleString()}
@@ -116,10 +136,12 @@ export function RestaurantOrderCard({ order, onUpdateStatus, isNew }: Restaurant
         </div>
       </div>
 
-      {/* Delivery Address */}
+      {/* Delivery/Collection Address */}
       <p className="text-sm mb-3">
-        <span className="text-muted-foreground">Delivery: </span>
-        {order.delivery_address}
+        <span className="text-muted-foreground">
+          {orderType === 'collection' ? 'Collection: ' : 'Delivery: '}
+        </span>
+        {orderType === 'collection' ? 'Customer will collect at store' : order.delivery_address}
       </p>
 
       {/* Notes */}
