@@ -24,24 +24,32 @@ export default function OrderDetail() {
   const [onlinePaymentAvailable, setOnlinePaymentAvailable] = useState(false);
   const [checkingPayment, setCheckingPayment] = useState(true);
   const [confirmingPayment, setConfirmingPayment] = useState(false);
+  const [awaitingPaymentConfirmation, setAwaitingPaymentConfirmation] = useState(false);
   const { permission, requestPermission, showNotification, supported } = usePushNotifications();
   const previousStatus = useRef<string | null>(null);
+  const toastShownRef = useRef(false);
 
   // Handle payment return messages
   useEffect(() => {
+    if (toastShownRef.current) return;
+    
     const paymentStatus = searchParams.get('payment');
     if (paymentStatus === 'success') {
+      toastShownRef.current = true;
+      setAwaitingPaymentConfirmation(true);
       toast({
-        title: "Payment successful!",
-        description: "Your order is being processed."
+        title: "Payment submitted!",
+        description: "Waiting for confirmation..."
       });
     } else if (paymentStatus === 'cancelled') {
+      toastShownRef.current = true;
       toast({
         title: "Payment cancelled",
         description: "You can try again or choose cash on delivery.",
         variant: "destructive"
       });
     } else if (paymentStatus === 'failed') {
+      toastShownRef.current = true;
       toast({
         title: "Payment failed",
         description: "Please try again or choose a different payment method.",
@@ -49,6 +57,17 @@ export default function OrderDetail() {
       });
     }
   }, [searchParams, toast]);
+
+  // Watch for payment confirmation via realtime
+  useEffect(() => {
+    if (awaitingPaymentConfirmation && order?.payment_confirmed) {
+      setAwaitingPaymentConfirmation(false);
+      toast({
+        title: "Payment confirmed! ✓",
+        description: "Your payment has been processed successfully."
+      });
+    }
+  }, [order?.payment_confirmed, awaitingPaymentConfirmation, toast]);
 
   useEffect(() => {
     if (id) {
@@ -233,6 +252,27 @@ export default function OrderDetail() {
               </p>
             </div>
           )}
+          {/* Payment Processing Indicator */}
+          {awaitingPaymentConfirmation && !order.payment_confirmed && (
+            <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-3">
+              <Loader2 className="w-5 h-5 animate-spin text-amber-600" />
+              <div>
+                <p className="text-sm font-medium text-amber-800">Payment processing...</p>
+                <p className="text-xs text-amber-600">This usually takes a few seconds</p>
+              </div>
+            </div>
+          )}
+          
+          {/* Payment Confirmed Indicator - show briefly after confirmation */}
+          {order.payment_confirmed && order.payment_method === 'online' && order.status === 'confirmed' && (
+            <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-green-600" />
+              <p className="text-sm text-green-800">
+                ✓ Payment confirmed - Restaurant will start preparing soon!
+              </p>
+            </div>
+          )}
+          
           {order.status === 'awaiting_payment' && (
             <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
               <p className="text-sm text-blue-800">
