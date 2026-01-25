@@ -30,25 +30,30 @@ export function useGeolocation() {
           setState(prev => ({ ...prev, coordinates: { lat: latitude, lng: longitude } }));
 
           try {
-            // Reverse geocode using Mapbox
+            // Reverse geocode using OpenStreetMap Nominatim (free, no API key)
             const response = await fetch(
-              `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${await getMapboxToken()}`
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+              {
+                headers: {
+                  'User-Agent': 'PlatePal-Delivery-App/1.0'
+                }
+              }
             );
             const data = await response.json();
             
-            if (data.features && data.features.length > 0) {
-              const address = data.features[0].place_name;
+            if (data && data.display_name) {
+              const address = data.display_name;
               setState({ loading: false, error: null, address, coordinates: { lat: latitude, lng: longitude } });
               resolve(address);
             } else {
               // Fallback to coordinates if no address found
-              const fallbackAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+              const fallbackAddress = `Location: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
               setState({ loading: false, error: null, address: fallbackAddress, coordinates: { lat: latitude, lng: longitude } });
               resolve(fallbackAddress);
             }
           } catch {
             // Fallback to coordinates if geocoding fails
-            const fallbackAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+            const fallbackAddress = `Location: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
             setState({ loading: false, error: null, address: fallbackAddress, coordinates: { lat: latitude, lng: longitude } });
             resolve(fallbackAddress);
           }
@@ -69,20 +74,10 @@ export function useGeolocation() {
           setState({ loading: false, error: errorMessage, address: null, coordinates: null });
           resolve(null);
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
       );
     });
   }, []);
 
   return { ...state, getCurrentLocation };
-}
-
-async function getMapboxToken(): Promise<string> {
-  try {
-    const { supabase } = await import('@/integrations/supabase/client');
-    const { data } = await supabase.functions.invoke('get-mapbox-token');
-    return data?.token || '';
-  } catch {
-    return '';
-  }
 }

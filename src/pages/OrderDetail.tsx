@@ -4,6 +4,7 @@ import { OrderStatusTracker } from '@/components/OrderStatusTracker';
 import { OrderChat } from '@/components/OrderChat';
 import { ReviewForm } from '@/components/ReviewForm';
 import { PaymentMethodSelector } from '@/components/PaymentMethodSelector';
+import { DeliveryETA } from '@/components/DeliveryETA';
 import { supabase } from '@/integrations/supabase/client';
 import { Bell, XCircle, Star, Banknote, CreditCard, Loader2 } from 'lucide-react';
 import { usePushNotifications, ORDER_STATUS_MESSAGES } from '@/hooks/usePushNotifications';
@@ -243,7 +244,22 @@ export default function OrderDetail() {
             )}
           </div>
           <OrderStatusTracker status={order.status} />
-          
+
+          {/* Delivery ETA - shows for active orders */}
+          {order.status !== 'delivered' && order.status !== 'cancelled' && order.status !== 'pending' && (
+            <DeliveryETA
+              status={order.status}
+              orderCreatedAt={order.created_at}
+              restaurantAddress={order.restaurants?.address}
+              customerAddress={order.delivery_address}
+              restaurantCoords={
+                order.restaurants?.latitude && order.restaurants?.longitude
+                  ? { lat: order.restaurants.latitude, lng: order.restaurants.longitude }
+                  : undefined
+              }
+              className="mt-6"
+            />
+          )}
           {/* Status Messages */}
           {order.status === 'pending' && (
             <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">

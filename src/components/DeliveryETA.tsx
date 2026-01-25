@@ -13,6 +13,7 @@ interface DeliveryETAProps {
   className?: string;
 }
 
+// Estimated durations for each status in minutes
 const STATUS_DURATIONS: Record<string, number> = {
   pending: 5,        // 5 min for restaurant to confirm
   confirmed: 5,      // 5 min to start preparing
@@ -36,11 +37,12 @@ export function DeliveryETA({
   const [deliveryDuration, setDeliveryDuration] = useState<number>(15); // Default 15 min
   const [loadingDistance, setLoadingDistance] = useState(false);
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
+  const [calculationMethod, setCalculationMethod] = useState<string>('');
 
-  // Fetch actual delivery duration based on distance
+  // Fetch actual delivery duration based on distance using OSRM (free)
   useEffect(() => {
     const calculateDeliveryTime = async () => {
-      if (!restaurantAddress || !customerAddress) return;
+      if (!restaurantAddress && !customerAddress && !restaurantCoords && !customerCoords) return;
       
       setLoadingDistance(true);
       try {
@@ -53,9 +55,16 @@ export function DeliveryETA({
           }
         });
 
-        if (!error && data?.durationMinutes) {
-          setDeliveryDuration(data.durationMinutes);
-          setDistanceKm(data.distanceKm);
+        if (!error && data) {
+          if (data.durationMinutes) {
+            setDeliveryDuration(data.durationMinutes);
+          }
+          if (data.distanceKm) {
+            setDistanceKm(data.distanceKm);
+          }
+          if (data.method) {
+            setCalculationMethod(data.method);
+          }
           console.log('Distance calculated:', data);
         }
       } catch (err) {
@@ -178,6 +187,7 @@ export function DeliveryETA({
         <div className="mt-3 text-center">
           <p className="text-xs text-muted-foreground">
             📍 {distanceKm} km away • ~{deliveryDuration} min drive
+            {calculationMethod === 'driving' && ' (route calculated)'}
           </p>
         </div>
       )}

@@ -12,6 +12,74 @@ interface RequestBody {
   customerAddress?: string;
 }
 
+// Geocode address using OpenStreetMap Nominatim (free, no API key needed)
+async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&countrycodes=za&limit=1`,
+      {
+        headers: {
+          'User-Agent': 'PlatePal-Delivery-App/1.0'
+        }
+      }
+    );
+    const data = await response.json();
+    
+    if (data && data.length > 0) {
+      return {
+        lat: parseFloat(data[0].lat),
+        lng: parseFloat(data[0].lon)
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("Geocoding error:", error);
+    return null;
+  }
+}
+
+// Calculate distance and duration using OSRM (free, no API key needed)
+async function calculateRoute(
+  fromCoords: { lat: number; lng: number },
+  toCoords: { lat: number; lng: number }
+): Promise<{ distanceKm: number; durationMinutes: number } | null> {
+  try {
+    // OSRM public API for driving directions
+    const url = `https://router.project-osrm.org/route/v1/driving/${fromCoords.lng},${fromCoords.lat};${toCoords.lng},${toCoords.lat}?overview=false`;
+    
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+      const route = data.routes[0];
+      return {
+        distanceKm: Math.round((route.distance / 1000) * 10) / 10, // meters to km
+        durationMinutes: Math.ceil(route.duration / 60) // seconds to minutes
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("OSRM routing error:", error);
+    return null;
+  }
+}
+
+// Haversine formula for straight-line distance fallback
+function haversineDistance(
+  coords1: { lat: number; lng: number },
+  coords2: { lat: number; lng: number }
+): number {
+  const R = 6371; // Earth's radius in km
+  const dLat = (coords2.lat - coords1.lat) * Math.PI / 180;
+  const dLon = (coords2.lng - coords1.lng) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(coords1.lat * Math.PI / 180) * Math.cos(coords2.lat * Math.PI / 180) * 
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -19,67 +87,35 @@ serve(async (req) => {
   }
 
   try {
-    const mapboxToken = Deno.env.get("MAPBOX_PUBLIC_TOKEN");
-    if (!mapboxToken) {
-      // Return fallback estimate if no token configured
-      console.log("Mapbox token not configured, returning default estimate");
-      return new Response(
-        JSON.stringify({ 
-          distanceKm: 5,
-          durationMinutes: 15,
-          method: 'default-estimate'
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     const body: RequestBody = await req.json();
     console.log("Calculate distance request:", body);
 
-    let restaurantCoords = body.restaurantCoords;
-    let customerCoords = body.customerCoords;
+    let restaurantCoords: { lat: number; lng: number } | null = body.restaurantCoords || null;
+    let customerCoords: { lat: number; lng: number } | null = body.customerCoords || null;
 
     // Geocode restaurant address if coordinates not provided
     if (!restaurantCoords && body.restaurantAddress) {
-      try {
-        const geocodeRes = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(body.restaurantAddress)}.json?access_token=${mapboxToken}&country=za&limit=1`
-        );
-        const geocodeData = await geocodeRes.json();
-        
-        if (geocodeData.features && geocodeData.features.length > 0) {
-          const [lng, lat] = geocodeData.features[0].center;
-          restaurantCoords = { lat, lng };
-          console.log("Geocoded restaurant:", body.restaurantAddress, "->", restaurantCoords);
-        } else {
-          console.log("No geocode results for restaurant address:", body.restaurantAddress);
-        }
-      } catch (geocodeError) {
-        console.error("Failed to geocode restaurant address:", geocodeError);
+      console.log("Geocoding restaurant address:", body.restaurantAddress);
+      restaurantCoords = await geocodeAddress(body.restaurantAddress);
+      if (restaurantCoords) {
+        console.log("Restaurant geocoded:", restaurantCoords);
+      } else {
+        console.log("Failed to geocode restaurant address");
       }
     }
 
     // Geocode customer address if coordinates not provided
     if (!customerCoords && body.customerAddress) {
-      try {
-        const geocodeRes = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(body.customerAddress)}.json?access_token=${mapboxToken}&country=za&limit=1`
-        );
-        const geocodeData = await geocodeRes.json();
-        
-        if (geocodeData.features && geocodeData.features.length > 0) {
-          const [lng, lat] = geocodeData.features[0].center;
-          customerCoords = { lat, lng };
-          console.log("Geocoded customer:", body.customerAddress, "->", customerCoords);
-        } else {
-          console.log("No geocode results for customer address:", body.customerAddress);
-        }
-      } catch (geocodeError) {
-        console.error("Failed to geocode customer address:", geocodeError);
+      console.log("Geocoding customer address:", body.customerAddress);
+      customerCoords = await geocodeAddress(body.customerAddress);
+      if (customerCoords) {
+        console.log("Customer geocoded:", customerCoords);
+      } else {
+        console.log("Failed to geocode customer address");
       }
     }
 
-    // If we couldn't get both coordinates, return a default estimate instead of an error
+    // If we couldn't get both coordinates, return a default estimate
     if (!restaurantCoords || !customerCoords) {
       console.log("Could not determine coordinates, returning default estimate");
       return new Response(
@@ -87,57 +123,39 @@ serve(async (req) => {
           distanceKm: 5,
           durationMinutes: 15,
           method: 'default-estimate',
-          note: 'Could not calculate exact distance'
+          note: 'Could not calculate exact distance - addresses could not be geocoded'
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Get directions from Mapbox
-    const directionsUrl = `https://api.mapbox.com/directions/v5/mapbox/driving/${restaurantCoords.lng},${restaurantCoords.lat};${customerCoords.lng},${customerCoords.lat}?access_token=${mapboxToken}&overview=false`;
+    // Try OSRM for accurate driving distance/duration
+    console.log("Calculating route via OSRM...");
+    const routeResult = await calculateRoute(restaurantCoords, customerCoords);
     
-    console.log("Fetching directions...");
-    const directionsRes = await fetch(directionsUrl);
-    const directionsData = await directionsRes.json();
-
-    if (!directionsData.routes || directionsData.routes.length === 0) {
-      // Fallback to straight-line distance
-      const R = 6371; // Earth's radius in km
-      const dLat = (customerCoords.lat - restaurantCoords.lat) * Math.PI / 180;
-      const dLon = (customerCoords.lng - restaurantCoords.lng) * Math.PI / 180;
-      const a = 
-        Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.cos(restaurantCoords.lat * Math.PI / 180) * Math.cos(customerCoords.lat * Math.PI / 180) * 
-        Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      const distanceKm = R * c;
-      
-      // Estimate 2 min per km for driving
-      const durationMinutes = Math.ceil(distanceKm * 2);
-
-      console.log("Using straight-line fallback:", { distanceKm, durationMinutes });
-      
+    if (routeResult) {
+      console.log("OSRM route calculated:", routeResult);
       return new Response(
-        JSON.stringify({ 
-          distanceKm: Math.round(distanceKm * 10) / 10,
-          durationMinutes,
-          method: 'straight-line'
+        JSON.stringify({
+          distanceKm: routeResult.distanceKm,
+          durationMinutes: routeResult.durationMinutes,
+          method: 'driving'
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const route = directionsData.routes[0];
-    const distanceKm = route.distance / 1000; // Convert meters to km
-    const durationMinutes = Math.ceil(route.duration / 60); // Convert seconds to minutes
-
-    console.log("Route calculated:", { distanceKm, durationMinutes });
+    // Fallback to straight-line distance with estimated drive time
+    console.log("OSRM failed, using straight-line fallback");
+    const distanceKm = haversineDistance(restaurantCoords, customerCoords);
+    // Estimate 2.5 min per km for urban driving (accounts for traffic, turns, etc.)
+    const durationMinutes = Math.ceil(distanceKm * 2.5);
 
     return new Response(
-      JSON.stringify({
+      JSON.stringify({ 
         distanceKm: Math.round(distanceKm * 10) / 10,
-        durationMinutes,
-        method: 'driving'
+        durationMinutes: Math.max(5, durationMinutes), // minimum 5 minutes
+        method: 'straight-line'
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -146,8 +164,13 @@ serve(async (req) => {
     console.error("Error calculating distance:", error);
     const message = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ 
+        distanceKm: 5,
+        durationMinutes: 15,
+        method: 'error-fallback',
+        error: message
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
