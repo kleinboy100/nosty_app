@@ -23,7 +23,6 @@ export function BottomNav() {
   const visibleItems = navItems.filter(item => item.show);
 
   const moreItems = [
-    { to: '/restaurant/register', icon: Store, label: 'Register as Provider' },
     { to: user ? '/profile' : '/auth', icon: User, label: user ? 'Profile' : 'Sign In' },
   ];
 

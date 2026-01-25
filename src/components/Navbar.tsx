@@ -19,7 +19,9 @@ export function Navbar() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-2">
-            <span className="font-display text-2xl font-bold gradient-text">KasiConnect</span>
+            <span className="font-display text-xl md:text-2xl font-black text-brand-foreground bg-brand px-3 py-1 rounded-lg">
+              Nosty'$ Fresh Fast Food
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
