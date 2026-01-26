@@ -74,22 +74,11 @@ export default function Index() {
           restaurantId={restaurant?.id || NOSTY_RESTAURANT_ID}
           restaurantName={restaurant?.name || "Nosty's Fresh Fast Food"}
         />
-        <div className="relative container mx-auto px-4 h-full flex flex-col z-10">
-          <div className="max-w-xl mt-8">
+        <div className="relative container mx-auto px-4 h-full flex flex-col z-10 pointer-events-none">
+          <div className="max-w-xl mt-3">
             <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-bold text-card mb-2 animate-fade-in">
               Fresh & Fast
             </h1>
-          </div>
-          <div className="absolute bottom-6 left-4 right-4 md:left-4 md:right-auto animate-slide-up">
-            <div className="relative max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-              <Input
-                placeholder="Search meals..."
-                className="pl-9 h-10 bg-card border-0 shadow-lg text-sm"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
           </div>
         </div>
       </section>
@@ -118,6 +107,17 @@ export default function Index() {
       {/* Menu Items - Dense KFC-style grid */}
       <section className="py-4">
         <div className="container mx-auto px-3">
+          {/* Search Bar */}
+          <div className="relative max-w-sm mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+            <Input
+              placeholder="Search meals..."
+              className="pl-9 h-10 bg-card border border-border shadow-sm text-sm"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          
           <h2 className="font-display text-lg font-bold text-foreground mb-3">
             {selectedCategory === 'All' ? 'Our Menu' : selectedCategory}
           </h2>
