@@ -1,0 +1,99 @@
+This **Operations Runbook** is designed specifically for the owner of **Nosty'$ Fresh Fast Food**. It covers the day-to-day management of the platform, troubleshooting for the new OpenStreetMap/OSRM services, and asset management for the menu.
+
+---
+
+### 1. Menu & Asset Management
+
+With the new native file upload system, managing the digital storefront is now self-service.
+
+#### Adding/Updating Menu Items
+
+1. Navigate to the **Dashboard** > **Menu** tab.
+2. To add a new item, click **Add Item**. To update, click the **Edit (Pencil)** icon on an existing item.
+3. **Image Upload:** Click the **Upload Image** area. Choose a clear, high-resolution photo (Max 5MB).
+4. **Availability:** Use the **Toggle Switch** to instantly hide items that are out of stock. This updates the customer menu in real-time.
+
+#### Storage Maintenance
+
+* **Bucket Location:** All images are stored in the `menu-images` bucket.
+* **Optimization:** If the app feels slow to load images, ensure you are uploading JPEGs or WebPs under 1MB where possible (though the system supports up to 5MB).
+
+---
+
+### 2. Location & Routing Troubleshooting
+
+The app uses **OSRM** and **Nominatim** to avoid Google Maps API costs. If a customer reports that an address isn't found or an ETA is missing:
+
+#### Address Not Found (Nominatim)
+
+* **Cause:** The OpenStreetMap database might not have a specific house number for a brand-new development.
+* **Workaround:** Advise the customer to enter the nearest street corner or landmark.
+* **Verification:** You can test an address manually at [openstreetmap.org](https://www.openstreetmap.org).
+
+#### Missing ETA or Distance (OSRM)
+
+* **Cause:** The public OSRM routing server may be experiencing high traffic or the coordinates are in a non-routable area (e.g., inside a park).
+* **System Behavior:** The app will automatically fallback to the **Haversine Formula** (straight-line distance). The ETA will display as "Estimated" rather than "Live."
+
+---
+
+### 3. Payment Processing (Yoco)
+
+The app monitors payments in real-time via secure webhooks.
+
+#### If an Order remains "Awaiting Payment":
+
+1. **Check Yoco Dashboard:** Verify if the transaction was successful on Yoco's side.
+2. **Webhook Delay:** Occasionally, there is a 5–10 second delay between the bank's success and the webhook reaching our app.
+3. **Manual Verification:** If the payment is successful in Yoco but "Awaiting" in the app, the owner can manually "Accept" the order in the Dashboard once they have verified the funds.
+
+---
+
+### 4. Emergency Procedures
+
+#### Rotating Webhook Secrets
+
+If you suspect your `YOCO_WEBHOOK_SECRET` has been compromised:
+
+1. Generate a new secret in your **Yoco Business Portal**.
+2. Log into the **Supabase Dashboard**.
+3. Navigate to **Edge Functions** > **yoco-webhook** > **Settings**.
+4. Update the secret environment variable. This will immediately invalidate the old secret and secure the endpoint.
+
+#### Force-Closing the Store
+
+If the restaurant needs to stop taking orders immediately:
+
+1. Go to **Dashboard** > **Settings**.
+2. Toggle the **Store Status** to "Closed."
+3. This will prevent the "Checkout" button from appearing for any customers until toggled back to "Open."
+
+---
+
+**Would you like me to create a video walkthrough of the new Menu Management dashboard or generate a "Customer Help" guide for the new collection/delivery options?**
+  %% Core writes via Edge Functions
+  CUST -->|Place order (COD or Online)| EF
+  REST -->|Approve/Decline; Progress; ETA| EF
+  ADMIN -->|Restaurant verification decisions| EF
+  EF --> DB
+
+  %% Realtime updates
+  DB <--> RT
+  CUST <--> RT
+  REST <--> RT
+
+  %% Online payments
+  EF -->|Create checkout (server-side)| YOCO
+  YWH -->|Webhook event POST| EF
+  EF -->|Verify + update payment/order| DB
+
+  %% COD commission settlement
+  EF -->|Compute COD commission balance| DB
+  REST -->|Settle COD commission on due date| EF
+  EF -->|Restrict/Suspend if overdue| DB
+
+  %% Verification roadmap
+  REST -->|Upload docs (planned)| STOR
+  EF -->|Store verification metadata/status| DB
+  EF -.->|Planned integration| CIPC
+  ```
