@@ -53,35 +53,35 @@ export function KFCMenuItem({
   const defaultImage = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400';
 
   return (
-    <div className="bg-card rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 group">
-      {/* Image Container - Square with gradient overlay */}
+    <div className="bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 group">
+      {/* Image Container - Compact square */}
       <div className="relative aspect-square overflow-hidden bg-muted">
         <img
           src={imageUrl || defaultImage}
           alt={name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
         />
-        {/* Price Badge */}
-        <div className="absolute top-3 right-3 bg-primary text-primary-foreground px-3 py-1 rounded-full font-bold text-sm shadow-lg">
+        {/* Price Badge - Smaller */}
+        <div className="absolute top-2 right-2 bg-primary text-primary-foreground px-2 py-0.5 rounded-full font-bold text-xs shadow">
           R{price.toFixed(0)}
         </div>
-        {/* Add Button - Floating */}
+        {/* Add Button - Floating, smaller */}
         <Button
           onClick={handleAddToCart}
           size="icon"
-          className="absolute bottom-3 right-3 h-12 w-12 rounded-full bg-primary hover:bg-primary/90 shadow-lg transform group-hover:scale-110 transition-transform"
+          className="absolute bottom-2 right-2 h-9 w-9 rounded-full bg-primary hover:bg-primary/90 shadow transform group-hover:scale-105 transition-transform"
         >
-          <Plus size={24} className="text-primary-foreground" />
+          <Plus size={18} className="text-primary-foreground" />
         </Button>
       </div>
       
-      {/* Content */}
-      <div className="p-4">
-        <h4 className="font-display font-bold text-foreground text-lg leading-tight mb-1 line-clamp-1">
+      {/* Content - More compact */}
+      <div className="p-2">
+        <h4 className="font-display font-bold text-foreground text-sm leading-tight line-clamp-1">
           {name}
         </h4>
         {description && (
-          <p className="text-muted-foreground text-sm line-clamp-2 leading-relaxed">
+          <p className="text-muted-foreground text-xs line-clamp-1 mt-0.5">
             {description}
           </p>
         )}

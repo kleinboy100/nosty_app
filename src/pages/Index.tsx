@@ -67,25 +67,20 @@ export default function Index() {
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section with Slideshow */}
-      <section className="relative h-[400px] md:h-[500px] overflow-hidden">
+      {/* Hero Section with Slideshow - Compact KFC-style */}
+      <section className="relative h-[180px] md:h-[220px] overflow-hidden">
         <HeroSlideshow />
         <div className="relative container mx-auto px-4 h-full flex flex-col justify-center z-10">
           <div className="max-w-xl">
-            <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-card mb-4 animate-fade-in">
-              Fresh & Fast,
-              <br />
-              <span className="text-primary">just how you like it</span>
+            <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-bold text-card mb-2 animate-fade-in">
+              Fresh & Fast
             </h1>
-            <p className="text-card/80 text-lg mb-8 animate-fade-in">
-              Explore our delicious menu and order your favorite meals today.
-            </p>
-            <div className="flex gap-4 animate-slide-up">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
+            <div className="flex gap-3 animate-slide-up">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                 <Input
-                  placeholder="Search meals, combos..."
-                  className="pl-10 h-12 bg-card border-0 shadow-lg"
+                  placeholder="Search meals..."
+                  className="pl-9 h-10 bg-card border-0 shadow-lg text-sm"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -95,15 +90,15 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Category Filters */}
-      <section className="py-6 border-b border-border">
-        <div className="container mx-auto px-4">
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+      {/* Category Filters - Sticky like KFC */}
+      <section className="py-3 border-b border-border sticky top-16 bg-background z-40">
+        <div className="container mx-auto px-3">
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
             {availableCategories.map(category => (
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
                   selectedCategory === category
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
@@ -116,32 +111,32 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Menu Items */}
-      <section className="py-8">
-        <div className="container mx-auto px-4">
-          <h2 className="font-display text-2xl font-bold text-foreground mb-6">
+      {/* Menu Items - Dense KFC-style grid */}
+      <section className="py-4">
+        <div className="container mx-auto px-3">
+          <h2 className="font-display text-lg font-bold text-foreground mb-3">
             {selectedCategory === 'All' ? 'Our Menu' : selectedCategory}
           </h2>
           
           {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {[...Array(8)].map((_, i) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              {[...Array(10)].map((_, i) => (
                 <div key={i} className="card-elevated overflow-hidden">
                   <div className="aspect-square bg-muted animate-pulse" />
-                  <div className="p-3 space-y-2">
-                    <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
-                    <div className="h-3 bg-muted rounded animate-pulse w-1/2" />
+                  <div className="p-2 space-y-1">
+                    <div className="h-3 bg-muted rounded animate-pulse w-3/4" />
+                    <div className="h-2 bg-muted rounded animate-pulse w-1/2" />
                   </div>
                 </div>
               ))}
             </div>
           ) : filteredItems.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground text-lg">No meals found</p>
-              <p className="text-muted-foreground text-sm mt-2">Try adjusting your search or category</p>
+            <div className="text-center py-8">
+              <p className="text-muted-foreground text-base">No meals found</p>
+              <p className="text-muted-foreground text-xs mt-1">Try adjusting your search</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
               {filteredItems.map(item => (
                 <KFCMenuItem
                   key={item.id}
