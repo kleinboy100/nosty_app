@@ -1,99 +1,74 @@
-This **Operations Runbook** is designed specifically for the owner of **Nosty'$ Fresh Fast Food**. It covers the day-to-day management of the platform, troubleshooting for the new OpenStreetMap/OSRM services, and asset management for the menu.
+# Operations Runbook: Nosty'$ Fresh Fast Food
+
+This guide is for the restaurant owner to manage daily operations, maintain the digital menu, and troubleshoot the "Fresh & Fast" platform infrastructure.
 
 ---
 
-### 1. Menu & Asset Management
+## 1. Menu & Asset Management
+The menu system now supports native image hosting via Supabase Storage.
 
-With the new native file upload system, managing the digital storefront is now self-service.
+### Managing Menu Items
+1. **Access:** Navigate to the **Dashboard** > **Menu** tab.
+2. **Adding Items:** Click **"Add Item"**. You must provide a Name, Category, and Price.
+3. **Uploading Photos:** - Click **"Upload Image"** to select a file from your device.
+    - **Specs:** Maximum file size is **5MB**. Supported formats: JPG, PNG, WebP.
+    - **Preview:** A thumbnail will appear immediately. Click the "X" on the preview to remove or replace it.
+4. **Availability:** If an ingredient is out of stock, use the **"Available" toggle** on the main menu list. This hides the item from customers instantly without deleting your data.
 
-#### Adding/Updating Menu Items
-
-1. Navigate to the **Dashboard** > **Menu** tab.
-2. To add a new item, click **Add Item**. To update, click the **Edit (Pencil)** icon on an existing item.
-3. **Image Upload:** Click the **Upload Image** area. Choose a clear, high-resolution photo (Max 5MB).
-4. **Availability:** Use the **Toggle Switch** to instantly hide items that are out of stock. This updates the customer menu in real-time.
-
-#### Storage Maintenance
-
-* **Bucket Location:** All images are stored in the `menu-images` bucket.
-* **Optimization:** If the app feels slow to load images, ensure you are uploading JPEGs or WebPs under 1MB where possible (though the system supports up to 5MB).
-
----
-
-### 2. Location & Routing Troubleshooting
-
-The app uses **OSRM** and **Nominatim** to avoid Google Maps API costs. If a customer reports that an address isn't found or an ETA is missing:
-
-#### Address Not Found (Nominatim)
-
-* **Cause:** The OpenStreetMap database might not have a specific house number for a brand-new development.
-* **Workaround:** Advise the customer to enter the nearest street corner or landmark.
-* **Verification:** You can test an address manually at [openstreetmap.org](https://www.openstreetmap.org).
-
-#### Missing ETA or Distance (OSRM)
-
-* **Cause:** The public OSRM routing server may be experiencing high traffic or the coordinates are in a non-routable area (e.g., inside a park).
-* **System Behavior:** The app will automatically fallback to the **Haversine Formula** (straight-line distance). The ETA will display as "Estimated" rather than "Live."
+### Storage Maintenance
+- Assets are stored in the `menu-images` bucket.
+- **Organization:** Files are automatically renamed using UUIDs and stored in folders named after your `restaurant_id` to prevent naming conflicts.
 
 ---
 
-### 3. Payment Processing (Yoco)
+## 2. Location & Routing Services
+The app uses OpenStreetMap (OSM) technologies to provide free, high-accuracy routing.
 
-The app monitors payments in real-time via secure webhooks.
+### Address Search (Nominatim)
+- **Issue:** A customer cannot find their specific street address.
+- **Action:** Nominatim relies on community-driven maps. If an address is missing, advise the customer to use the nearest landmark or street intersection.
+- **Verification:** You can verify if a location exists by searching on [OpenStreetMap.org](https://www.openstreetmap.org).
 
-#### If an Order remains "Awaiting Payment":
-
-1. **Check Yoco Dashboard:** Verify if the transaction was successful on Yoco's side.
-2. **Webhook Delay:** Occasionally, there is a 5–10 second delay between the bank's success and the webhook reaching our app.
-3. **Manual Verification:** If the payment is successful in Yoco but "Awaiting" in the app, the owner can manually "Accept" the order in the Dashboard once they have verified the funds.
-
----
-
-### 4. Emergency Procedures
-
-#### Rotating Webhook Secrets
-
-If you suspect your `YOCO_WEBHOOK_SECRET` has been compromised:
-
-1. Generate a new secret in your **Yoco Business Portal**.
-2. Log into the **Supabase Dashboard**.
-3. Navigate to **Edge Functions** > **yoco-webhook** > **Settings**.
-4. Update the secret environment variable. This will immediately invalidate the old secret and secure the endpoint.
-
-#### Force-Closing the Store
-
-If the restaurant needs to stop taking orders immediately:
-
-1. Go to **Dashboard** > **Settings**.
-2. Toggle the **Store Status** to "Closed."
-3. This will prevent the "Checkout" button from appearing for any customers until toggled back to "Open."
+### Distance & ETA (OSRM)
+- **Mechanism:** Driving time is calculated using the **Open Source Routing Machine (OSRM)**.
+- **Fallback:** If the OSRM API is down, the system defaults to the **Haversine Formula** (as-the-crow-flies distance). 
+- **Note:** ETAs include a 20-minute buffer for food preparation.
 
 ---
 
-**Would you like me to create a video walkthrough of the new Menu Management dashboard or generate a "Customer Help" guide for the new collection/delivery options?**
-  %% Core writes via Edge Functions
-  CUST -->|Place order (COD or Online)| EF
-  REST -->|Approve/Decline; Progress; ETA| EF
-  ADMIN -->|Restaurant verification decisions| EF
-  EF --> DB
+## 3. Order Fulfillment Workflow
 
-  %% Realtime updates
-  DB <--> RT
-  CUST <--> RT
-  REST <--> RT
+### Hybrid Options
+- **Delivery:** Fixed R25 fee. The system calculates distance from Nosty'$ to the customer.
+- **Collection:** R0 fee. The tracker skips the "Out for Delivery" stage and moves directly to **"Ready for Pickup"**.
 
-  %% Online payments
-  EF -->|Create checkout (server-side)| YOCO
-  YWH -->|Webhook event POST| EF
-  EF -->|Verify + update payment/order| DB
+### Payment Status
+1. **Real-time Monitoring:** The `OrderDetail` page updates automatically when a payment is confirmed.
+2. **Stuck Payments:** If a customer claims they paid but the status is "Awaiting Payment":
+    - Verify the transaction in your **Yoco Portal**.
+    - If confirmed in Yoco, you can manually progress the order status in the dashboard to "Preparing."
 
-  %% COD commission settlement
-  EF -->|Compute COD commission balance| DB
-  REST -->|Settle COD commission on due date| EF
-  EF -->|Restrict/Suspend if overdue| DB
+---
 
-  %% Verification roadmap
-  REST -->|Upload docs (planned)| STOR
-  EF -->|Store verification metadata/status| DB
-  EF -.->|Planned integration| CIPC
-  ```
+## 4. Emergency Procedures
+
+### Rotating Yoco Webhook Secrets
+If security is compromised:
+1. Generate a new **Webhook Secret** in the Yoco Dashboard.
+2. Go to **Supabase Dashboard** > **Edge Functions** > **Secrets**.
+3. Update `YOCO_WEBHOOK_SECRET` with the new value.
+4. Redeploy or restart the function to apply changes.
+
+### Emergency Store Closure
+1. Navigate to **Dashboard** > **Settings**.
+2. Toggle the **Store Open** switch to **OFF**.
+3. This disables the "Add to Cart" and "Checkout" functions for all users until you re-open.
+
+---
+
+## 5. Troubleshooting Log
+| Symptom | Probable Cause | Resolution |
+|---|---|---|
+| Image upload fails | File > 5MB or poor connection | Resize image or check Wi-Fi. |
+| ETA shows "0 mins" | Location permissions denied | Customer must allow GPS or enter address manually. |
+| Dashboard hidden | Identity mismatch | Ensure you are logged in with the email designated as the `owner_id`. |
