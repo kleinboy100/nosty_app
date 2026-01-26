@@ -193,7 +193,7 @@ export function OrderChat({ orderId, userType, className }: OrderChatProps) {
 
       {/* Chat Panel */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-80 bg-card border rounded-lg shadow-lg z-50">
+        <div className="fixed inset-x-4 bottom-20 md:absolute md:inset-auto md:top-full md:right-0 md:left-auto md:bottom-auto md:mt-2 w-auto md:w-72 max-w-[calc(100vw-2rem)] bg-card border rounded-lg shadow-lg z-50">
           <div className="p-3 border-b flex justify-between items-center">
             <span className="font-semibold text-sm">Order Chat</span>
             <Button variant="ghost" size="sm" onClick={() => setIsOpen(false)}>
@@ -201,7 +201,7 @@ export function OrderChat({ orderId, userType, className }: OrderChatProps) {
             </Button>
           </div>
           
-          <div className="h-64 overflow-y-auto p-3 space-y-2">
+          <div className="h-56 overflow-y-auto p-3 space-y-2">
             {messages.length === 0 ? (
               <p className="text-center text-muted-foreground text-sm py-8">
                 No messages yet. Start the conversation!
@@ -211,13 +211,13 @@ export function OrderChat({ orderId, userType, className }: OrderChatProps) {
                 <div
                   key={msg.id}
                   className={cn(
-                    "max-w-[80%] p-2 rounded-lg text-sm",
+                    "max-w-[85%] p-2 rounded-lg text-sm",
                     msg.sender_type === userType
                       ? "ml-auto bg-primary text-primary-foreground"
                       : "bg-muted"
                   )}
                 >
-                  <p>{msg.content}</p>
+                  <p className="break-words">{msg.content}</p>
                   <p className="text-xs opacity-70 mt-1">
                     {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
@@ -245,9 +245,9 @@ export function OrderChat({ orderId, userType, className }: OrderChatProps) {
                 handleTyping();
               }}
               placeholder="Type a message..."
-              className="flex-1 h-9"
+              className="flex-1 h-9 min-w-0"
             />
-            <Button type="submit" size="sm" disabled={!newMessage.trim()}>
+            <Button type="submit" size="sm" className="shrink-0" disabled={!newMessage.trim()}>
               <Send size={16} />
             </Button>
           </form>

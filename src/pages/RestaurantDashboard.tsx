@@ -128,14 +128,14 @@ export default function RestaurantDashboard() {
   const completedOrders = orders.filter(o => ['delivered', 'cancelled'].includes(o.status));
 
   return (
-    <div className="min-h-screen py-8">
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="font-display text-2xl font-bold">Restaurant Dashboard</h1>
+    <div className="min-h-screen py-4 md:py-8 overflow-x-hidden">
+      <div className="container mx-auto px-3 md:px-4 max-w-full">
+        <div className="flex flex-wrap justify-between items-center gap-3 mb-4 md:mb-6">
+          <h1 className="font-display text-xl md:text-2xl font-bold">Dashboard</h1>
           <Link to="/restaurant/register">
-            <Button className="btn-primary">
-              <Plus size={18} className="mr-2" />
-              Add Restaurant
+            <Button className="btn-primary text-sm" size="sm">
+              <Plus size={16} className="mr-1" />
+              Add
             </Button>
           </Link>
         </div>
@@ -151,9 +151,9 @@ export default function RestaurantDashboard() {
         ) : (
           <>
             {/* Restaurant Selector & Notifications */}
-            <div className="flex flex-wrap gap-4 items-center mb-6">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center mb-4 md:mb-6">
               <Select value={selectedRestaurant} onValueChange={setSelectedRestaurant}>
-                <SelectTrigger className="w-64">
+                <SelectTrigger className="w-full sm:w-48 md:w-56">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -164,47 +164,50 @@ export default function RestaurantDashboard() {
               </Select>
 
               {supported && permission !== 'granted' && (
-                <Button variant="outline" onClick={handleEnableNotifications}>
-                  <Bell size={16} className="mr-2" />
-                  Enable Notifications
+                <Button variant="outline" size="sm" onClick={handleEnableNotifications} className="text-sm">
+                  <Bell size={14} className="mr-1" />
+                  Notifications
                 </Button>
               )}
 
               {permission === 'granted' && (
-                <span className="text-sm text-green-600 flex items-center gap-1">
-                  <Volume2 size={16} />
-                  Notifications enabled
+                <span className="text-xs text-green-600 flex items-center gap-1">
+                  <Volume2 size={14} />
+                  On
                 </span>
               )}
             </div>
 
             {/* Order Tabs */}
-            <Tabs defaultValue="pending" className="w-full">
-              <TabsList className="mb-4">
-                <TabsTrigger value="pending" className="relative">
-                  New Orders
+            <Tabs defaultValue="pending" className="w-full overflow-hidden">
+              <TabsList className="mb-4 w-full flex flex-wrap h-auto gap-1 p-1">
+                <TabsTrigger value="pending" className="relative flex-1 min-w-0 text-xs md:text-sm px-2 md:px-3">
+                  <span className="hidden sm:inline">New </span>Orders
                   {pendingOrders.length > 0 && (
-                    <span className="ml-2 bg-primary text-primary-foreground text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                    <span className="ml-1 bg-primary text-primary-foreground text-xs w-4 h-4 md:w-5 md:h-5 rounded-full flex items-center justify-center">
                       {pendingOrders.length}
                     </span>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="active">
+                <TabsTrigger value="active" className="flex-1 min-w-0 text-xs md:text-sm px-2 md:px-3">
                   Active
                   {activeOrders.length > 0 && (
-                    <span className="ml-2 bg-blue-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                    <span className="ml-1 bg-blue-500 text-white text-xs w-4 h-4 md:w-5 md:h-5 rounded-full flex items-center justify-center">
                       {activeOrders.length}
                     </span>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="completed">Completed</TabsTrigger>
-                <TabsTrigger value="menu">
-                  <UtensilsCrossed size={16} className="mr-1" />
-                  Menu
+                <TabsTrigger value="completed" className="flex-1 min-w-0 text-xs md:text-sm px-2 md:px-3">
+                  <span className="hidden sm:inline">Completed</span>
+                  <span className="sm:hidden">Done</span>
                 </TabsTrigger>
-                <TabsTrigger value="settings">
-                  <Settings size={16} className="mr-1" />
-                  Settings
+                <TabsTrigger value="menu" className="flex-1 min-w-0 text-xs md:text-sm px-2 md:px-3">
+                  <UtensilsCrossed size={14} className="mr-1 shrink-0" />
+                  <span className="hidden sm:inline">Menu</span>
+                </TabsTrigger>
+                <TabsTrigger value="settings" className="flex-1 min-w-0 text-xs md:text-sm px-2 md:px-3">
+                  <Settings size={14} className="mr-1 shrink-0" />
+                  <span className="hidden sm:inline">Settings</span>
                 </TabsTrigger>
               </TabsList>
 
