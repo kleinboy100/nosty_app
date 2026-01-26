@@ -99,17 +99,17 @@ export function HeroSlideshow({ menuItems, restaurantId, restaurantName }: HeroS
           )}
         >
           {/* Left side - Text content (50%) */}
-          <div className="w-1/2 flex flex-col justify-center px-4 md:px-8 lg:px-12 z-10">
+          <div className="w-1/2 flex flex-col justify-center px-4 md:px-8 lg:px-12 z-10 bg-secondary">
             <div className="max-w-md">
-              <h2 className="font-display text-lg md:text-2xl lg:text-3xl font-bold text-card mb-1 line-clamp-2">
+              <h2 className="font-display text-lg md:text-2xl lg:text-3xl font-bold text-secondary-foreground mb-1 line-clamp-2">
                 {slide.title}
               </h2>
-              <p className="text-card/80 text-xs md:text-sm lg:text-base line-clamp-2 mb-2">
+              <p className="text-secondary-foreground/80 text-xs md:text-sm lg:text-base line-clamp-2 mb-2">
                 {slide.subtitle}
               </p>
               <div className="flex items-center gap-2 flex-wrap">
                 {slide.price > 0 && (
-                  <span className="inline-block bg-primary text-primary-foreground px-2 md:px-3 py-0.5 md:py-1 rounded-full text-xs md:text-sm font-bold">
+                  <span className="inline-block bg-secondary-foreground text-secondary px-2 md:px-3 py-0.5 md:py-1 rounded-full text-xs md:text-sm font-bold">
                     R{slide.price.toFixed(2)}
                   </span>
                 )}
@@ -121,7 +121,7 @@ export function HeroSlideshow({ menuItems, restaurantId, restaurantName }: HeroS
                       e.stopPropagation();
                       handleOrderNow(slide);
                     }}
-                    className="h-7 md:h-8 text-xs md:text-sm px-2 md:px-3 gap-1"
+                    className="h-7 md:h-8 text-xs md:text-sm px-2 md:px-3 gap-1 bg-secondary-foreground text-secondary hover:bg-secondary-foreground/90"
                   >
                     <ShoppingCart size={14} />
                     Order Now

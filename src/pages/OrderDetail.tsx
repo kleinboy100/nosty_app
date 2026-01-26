@@ -225,12 +225,12 @@ export default function OrderDetail() {
             variant: "destructive"
           });
         } else {
+          // Immediately update local state so UI reflects the change
+          setOrder((prev: any) => ({ ...prev, payment_method: 'cash', payment_confirmed: true }));
           toast({
             title: "Payment method confirmed",
             description: "You'll pay cash when your order arrives."
           });
-          // Refresh order data
-          fetchOrder();
         }
       }
     } catch (error) {
