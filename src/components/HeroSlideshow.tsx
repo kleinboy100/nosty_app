@@ -2,37 +2,34 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const slides = [
-  {
-    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=1200',
-    title: 'Kasi Burgers',
-    subtitle: 'Flame-grilled perfection'
-  },
-  {
-    image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=1200',
-    title: 'Braai & Grill',
-    subtitle: 'Authentic South African BBQ'
-  },
-  {
-    image: 'https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=1200',
-    title: 'Bunny Chow',
-    subtitle: 'Durban\'s finest street food'
-  },
-  {
-    image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200',
-    title: 'Traditional Dishes',
-    subtitle: 'Home-cooked Mzansi flavors'
-  },
-  {
-    image: 'https://images.unsplash.com/photo-1562967914-608f82629710?w=1200',
-    title: 'Shisanyama',
-    subtitle: 'The best township meat experience'
-  }
-];
+interface MenuItem {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  image_url: string | null;
+  category: string;
+}
 
-export function HeroSlideshow() {
+interface HeroSlideshowProps {
+  menuItems: MenuItem[];
+}
+
+export function HeroSlideshow({ menuItems }: HeroSlideshowProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Use menu items if available, otherwise use fallback
+  const slides = menuItems.length > 0 
+    ? menuItems.slice(0, 5).map(item => ({
+        image: item.image_url || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200',
+        title: item.name,
+        subtitle: item.description || item.category,
+        price: item.price
+      }))
+    : [
+        { image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=1200', title: 'Delicious Meals', subtitle: 'Fresh & Fast', price: 0 }
+      ];
 
   const startAutoPlay = useCallback(() => {
     if (intervalRef.current) {
@@ -41,7 +38,7 @@ export function HeroSlideshow() {
     intervalRef.current = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 5000);
-  }, []);
+  }, [slides.length]);
 
   useEffect(() => {
     startAutoPlay();
@@ -54,44 +51,63 @@ export function HeroSlideshow() {
 
   const goToNext = useCallback(() => {
     setCurrentSlide((prev) => (prev + 1) % slides.length);
-    startAutoPlay(); // Reset timer on manual navigation
-  }, [startAutoPlay]);
+    startAutoPlay();
+  }, [startAutoPlay, slides.length]);
 
   const goToPrev = useCallback(() => {
     setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
-    startAutoPlay(); // Reset timer on manual navigation
-  }, [startAutoPlay]);
+    startAutoPlay();
+  }, [startAutoPlay, slides.length]);
 
   const goToSlide = useCallback((index: number) => {
     setCurrentSlide(index);
-    startAutoPlay(); // Reset timer on manual navigation
+    startAutoPlay();
   }, [startAutoPlay]);
 
   return (
-    <div className="absolute inset-0 overflow-hidden">
+    <div className="absolute inset-0 overflow-hidden bg-gradient-to-r from-foreground/90 to-foreground/70">
       {/* Slides */}
       {slides.map((slide, index) => (
         <div
           key={index}
           className={cn(
-            "absolute inset-0 transition-opacity duration-500 ease-in-out",
+            "absolute inset-0 transition-opacity duration-500 ease-in-out flex",
             index === currentSlide 
               ? "opacity-100 z-0" 
               : "opacity-0 z-0"
           )}
         >
-          <img
-            src={slide.image}
-            alt={slide.title}
-            className="w-full h-full object-cover"
-          />
+          {/* Left side - Text content */}
+          <div className="flex-1 flex flex-col justify-center px-6 md:px-12 z-10">
+            <div className="max-w-md">
+              <h2 className="font-display text-xl md:text-2xl lg:text-3xl font-bold text-card mb-1 line-clamp-2">
+                {slide.title}
+              </h2>
+              <p className="text-card/80 text-sm md:text-base line-clamp-2 mb-2">
+                {slide.subtitle}
+              </p>
+              {slide.price > 0 && (
+                <span className="inline-block bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-bold">
+                  R{slide.price.toFixed(2)}
+                </span>
+              )}
+            </div>
+          </div>
+          
+          {/* Right side - Image */}
+          <div className="w-1/2 md:w-2/5 relative flex items-center justify-center p-4">
+            <div className="relative w-full h-full max-w-[200px] max-h-[200px] md:max-w-[240px] md:max-h-[240px]">
+              <img
+                src={slide.image}
+                alt={slide.title}
+                className="w-full h-full object-cover rounded-2xl shadow-2xl"
+              />
+            </div>
+          </div>
         </div>
       ))}
 
-      {/* Overlay - pointer-events-none so it doesn't block clicks */}
-      <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 to-foreground/40 pointer-events-none z-10" />
-
-      {/* Navigation Arrows - higher z-index */}
+      {/* Navigation Arrows */}
       <button
         type="button"
         onClick={(e) => {
@@ -99,10 +115,10 @@ export function HeroSlideshow() {
           e.stopPropagation();
           goToPrev();
         }}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-30 bg-card/30 hover:bg-card/50 backdrop-blur-sm rounded-full p-2 transition-all text-card cursor-pointer"
+        className="absolute left-2 top-1/2 -translate-y-1/2 z-30 bg-card/30 hover:bg-card/50 backdrop-blur-sm rounded-full p-1.5 transition-all text-card cursor-pointer"
         aria-label="Previous slide"
       >
-        <ChevronLeft size={24} />
+        <ChevronLeft size={20} />
       </button>
       <button
         type="button"
@@ -111,14 +127,14 @@ export function HeroSlideshow() {
           e.stopPropagation();
           goToNext();
         }}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-30 bg-card/30 hover:bg-card/50 backdrop-blur-sm rounded-full p-2 transition-all text-card cursor-pointer"
+        className="absolute right-2 top-1/2 -translate-y-1/2 z-30 bg-card/30 hover:bg-card/50 backdrop-blur-sm rounded-full p-1.5 transition-all text-card cursor-pointer"
         aria-label="Next slide"
       >
-        <ChevronRight size={24} />
+        <ChevronRight size={20} />
       </button>
 
-      {/* Dots Indicator - higher z-index */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex gap-2">
+      {/* Dots Indicator */}
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex gap-1.5">
         {slides.map((_, index) => (
           <button
             key={index}
@@ -129,10 +145,10 @@ export function HeroSlideshow() {
               goToSlide(index);
             }}
             className={cn(
-              "h-2 rounded-full transition-all cursor-pointer",
+              "h-1.5 rounded-full transition-all cursor-pointer",
               index === currentSlide 
-                ? "bg-primary w-6" 
-                : "bg-card/50 hover:bg-card/80 w-2"
+                ? "bg-primary w-5" 
+                : "bg-card/50 hover:bg-card/80 w-1.5"
             )}
             aria-label={`Go to slide ${index + 1}`}
           />

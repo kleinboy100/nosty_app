@@ -69,7 +69,7 @@ export default function Index() {
     <div className="min-h-screen">
       {/* Hero Section with Slideshow - Compact KFC-style */}
       <section className="relative h-[225px] md:h-[275px] overflow-hidden">
-        <HeroSlideshow />
+        <HeroSlideshow menuItems={menuItems} />
         <div className="relative container mx-auto px-4 h-full flex flex-col z-10">
           <div className="max-w-xl mt-8">
             <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-bold text-card mb-2 animate-fade-in">
