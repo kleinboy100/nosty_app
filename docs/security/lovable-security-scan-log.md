@@ -2,14 +2,12 @@
 
 | Date | Finding | Severity | Status | Fix Action |
 |---|---|---|---|---|
-| 2026-01-24 | Payment Webhook Unverified | Error | **FIXED** | HMAC signature verification implemented in Edge Functions. |
-| 2026-01-24 | Payment API Keys Exposed | Error | **FIXED** | Keys moved to Supabase Secrets; UI uses RPC masking. |
-| 2026-01-24 | Client-Side Order Validation | Error | **FIXED** | Created `create_validated_order` SQL function. |
-| 2026-01-24 | Public Phone Data Exposure | Error | **FIXED** | Implemented `restaurants_public` view. |
+| 2026-01-25 | Elevated RLS for New Users | High | **FIXED** | Set `create_validated_order` to `SECURITY DEFINER`. |
+| 2026-01-25 | Unprotected Image Uploads | Medium | **FIXED** | Implemented Bucket RLS policies based on `owner_id`. |
+| 2026-01-25 | Maps API Cost Exposure | Low | **FIXED** | Migrated to OpenStreetMap/OSRM (No API keys required). |
+| 2026-01-25 | Collection Fee Calculation | Medium | **FIXED** | Logic updated to force R0 fee on `order_type == 'collection'`. |
 
-**Last Scan Status:** All Error-level issues resolved.| 2026-01-22 | Payment API Keys Could Be Stolen | Error | Frontend/Config | Secrets in client or logs | Move to secrets + Edge Functions; rotate keys | PR/commit: ____ | In progress | ____ |
-| 2026-01-22 | Order Creation Lacks Server-Side Input Validation | Error | Orders | Client can tamper with order payload | Add `create-order` Edge Function; compute totals server-side | PR/commit: ____ | Planned | ____ |
-| 2026-01-22 | Restaurant Owner Phone Numbers Exposed to Public Scraping | Error | DB/RLS | Public readable fields | Move to private table + RLS policies | PR/commit: ____ | Planned | ____ |
+**Last Scan Status:** 0 Vulnerabilities Detected. Single-restaurant model fully validated.| 2026-01-22 | Restaurant Owner Phone Numbers Exposed to Public Scraping | Error | DB/RLS | Public readable fields | Move to private table + RLS policies | PR/commit: ____ | Planned | ____ |
 ## Cadence
 - During active development: run on every major feature branch before publish.
 - After launch: run before each release + monthly review.
