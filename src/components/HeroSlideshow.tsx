@@ -132,14 +132,12 @@ export function HeroSlideshow({ menuItems, restaurantId, restaurantName }: HeroS
           </div>
           
           {/* Right side - Image (50%) */}
-          <div className="w-1/2 relative flex items-center justify-center p-3 md:p-4">
-            <div className="relative w-full h-full max-w-[180px] max-h-[180px] md:max-w-[220px] md:max-h-[220px]">
-              <img
-                src={slide.image}
-                alt={slide.title}
-                className="w-full h-full object-cover rounded-2xl shadow-2xl"
-              />
-            </div>
+          <div className="w-1/2 relative">
+            <img
+              src={slide.image}
+              alt={slide.title}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
           </div>
         </div>
       ))}
