@@ -1,25 +1,24 @@
-# KasiConnect (Takeaway Ordering App)
+# Nosty'$ Fresh Fast Food (KasiConnect Powered)
 
-A food ordering platform where customers discover local restaurants, place orders for delivery or collection, and pay via Cash or secure online payments (Yoco).
+A specialized food ordering platform optimized for Nosty'$ Fresh Fast Food. Customers can browse the menu, place orders for delivery or collection, and track their meals in real-time with zero-cost routing services.
 
-## Core user journeys
+## Core User Journeys
 ### Customers
-- Secure sign-in via phone, Google, or email.
-- Mobile-optimized browsing with a persistent bottom navigation bar.
-- Real-time order tracking and in-app chat.
+- **Direct Access:** Immediate access to Nosty's menu without browsing a restaurant list.
+- **Hybrid Fulfillment:** Choose between "Delivery" (R25 fee) or "Collection" (R0 fee) at checkout.
+- **Real-Time Tracking:** Live payment status updates and progress tracking (Pending -> Preparing -> Ready/Out for Delivery).
+- **No-Cost Routing:** Real-time ETA and distance calculations powered by OpenStreetMap & OSRM.
 
-### Restaurants
-- Register profiles and manage digital menus.
-- Securely configure Yoco payment keys (keys are masked and never exposed to the UI).
-- Manage order lifecycle (Awaiting Payment -> Pending -> Preparing -> Out for Delivery).
+### Restaurant Owner (Nosty's)
+- **Menu Management:** Native file upload for high-res meal photos stored in Supabase Buckets.
+- **Dashboard:** Private orders management and item availability toggles (CRUD).
+- **Secure Payments:** Integrated Yoco support via secure Edge Functions.
 
-## Tech stack
-- **Frontend:** Lovable (React + Vite + Tailwind).
-- **Backend:** Supabase (Auth, Postgres, Realtime, Edge Functions).
-- **Payments:** Yoco SDK + Secure Server-side Webhooks.
-
-## Security (Current State)
-- **Zero-Trust Frontend:** No secrets stored in client code.
+## Tech Stack
+- **Frontend:** React + Vite + Tailwind (Custom Red/White "Fresh & Fast" Branding).
+- **Backend:** Supabase (Auth, Postgres, Realtime, Storage, Edge Functions).
+- **Maps/Routing:** OpenStreetMap (Nominatim API) & OSRM (Open Source Routing Machine).
+- **Payments:** Yoco SDK + HMAC-verified webhooks.- **Zero-Trust Frontend:** No secrets stored in client code.
 - **Server-Side Validation:** All orders are validated via database functions to prevent price tampering.
 - **Webhook Integrity:** All payment signals are verified using HMAC-SHA256 signatures.
 - **Privacy First:** Sensitive data (phone numbers, owner IDs) is isolated behind public views.- Approve/decline incoming orders; update order progress and ETA; chat with customers.
