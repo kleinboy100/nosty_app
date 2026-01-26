@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronLeft, ChevronRight, ShoppingCart } from 'lucide-react';
+import { ShoppingCart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
@@ -142,31 +142,6 @@ export function HeroSlideshow({ menuItems, restaurantId, restaurantName }: HeroS
         </div>
       ))}
 
-      {/* Navigation Arrows */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          goToPrev();
-        }}
-        className="absolute left-2 top-1/2 -translate-y-1/2 z-30 bg-card/30 hover:bg-card/50 backdrop-blur-sm rounded-full p-1.5 transition-all text-card cursor-pointer"
-        aria-label="Previous slide"
-      >
-        <ChevronLeft size={20} />
-      </button>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          goToNext();
-        }}
-        className="absolute right-2 top-1/2 -translate-y-1/2 z-30 bg-card/30 hover:bg-card/50 backdrop-blur-sm rounded-full p-1.5 transition-all text-card cursor-pointer"
-        aria-label="Next slide"
-      >
-        <ChevronRight size={20} />
-      </button>
 
       {/* Dots Indicator */}
       <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex gap-1.5">
