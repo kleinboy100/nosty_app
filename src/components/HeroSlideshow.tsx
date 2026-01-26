@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ShoppingCart } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useCart } from '@/contexts/CartContext';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface MenuItem {
   id: string;
@@ -13,22 +16,26 @@ interface MenuItem {
 
 interface HeroSlideshowProps {
   menuItems: MenuItem[];
+  restaurantId: string;
+  restaurantName: string;
 }
 
-export function HeroSlideshow({ menuItems }: HeroSlideshowProps) {
+export function HeroSlideshow({ menuItems, restaurantId, restaurantName }: HeroSlideshowProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const { addItem } = useCart();
 
   // Use menu items if available, otherwise use fallback
   const slides = menuItems.length > 0 
     ? menuItems.slice(0, 5).map(item => ({
+        id: item.id,
         image: item.image_url || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200',
         title: item.name,
         subtitle: item.description || item.category,
         price: item.price
       }))
     : [
-        { image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=1200', title: 'Delicious Meals', subtitle: 'Fresh & Fast', price: 0 }
+        { id: '', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=1200', title: 'Delicious Meals', subtitle: 'Fresh & Fast', price: 0 }
       ];
 
   const startAutoPlay = useCallback(() => {
@@ -64,6 +71,20 @@ export function HeroSlideshow({ menuItems }: HeroSlideshowProps) {
     startAutoPlay();
   }, [startAutoPlay]);
 
+  const handleOrderNow = (slide: typeof slides[0]) => {
+    if (!slide.id) return;
+    
+    addItem({
+      menuItemId: slide.id,
+      name: slide.title,
+      price: slide.price,
+      quantity: 1,
+      restaurantId,
+      restaurantName,
+    });
+    toast.success(`${slide.title} added to cart!`);
+  };
+
   return (
     <div className="absolute inset-0 overflow-hidden bg-gradient-to-r from-foreground/90 to-foreground/70">
       {/* Slides */}
@@ -77,26 +98,42 @@ export function HeroSlideshow({ menuItems }: HeroSlideshowProps) {
               : "opacity-0 z-0"
           )}
         >
-          {/* Left side - Text content */}
-          <div className="flex-1 flex flex-col justify-center px-6 md:px-12 z-10">
+          {/* Left side - Text content (50%) */}
+          <div className="w-1/2 flex flex-col justify-center px-4 md:px-8 lg:px-12 z-10">
             <div className="max-w-md">
-              <h2 className="font-display text-xl md:text-2xl lg:text-3xl font-bold text-card mb-1 line-clamp-2">
+              <h2 className="font-display text-lg md:text-2xl lg:text-3xl font-bold text-card mb-1 line-clamp-2">
                 {slide.title}
               </h2>
-              <p className="text-card/80 text-sm md:text-base line-clamp-2 mb-2">
+              <p className="text-card/80 text-xs md:text-sm lg:text-base line-clamp-2 mb-2">
                 {slide.subtitle}
               </p>
-              {slide.price > 0 && (
-                <span className="inline-block bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-bold">
-                  R{slide.price.toFixed(2)}
-                </span>
-              )}
+              <div className="flex items-center gap-2 flex-wrap">
+                {slide.price > 0 && (
+                  <span className="inline-block bg-primary text-primary-foreground px-2 md:px-3 py-0.5 md:py-1 rounded-full text-xs md:text-sm font-bold">
+                    R{slide.price.toFixed(2)}
+                  </span>
+                )}
+                {slide.id && (
+                  <Button
+                    size="sm"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleOrderNow(slide);
+                    }}
+                    className="h-7 md:h-8 text-xs md:text-sm px-2 md:px-3 gap-1"
+                  >
+                    <ShoppingCart size={14} />
+                    Order Now
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
           
-          {/* Right side - Image */}
-          <div className="w-1/2 md:w-2/5 relative flex items-center justify-center p-4">
-            <div className="relative w-full h-full max-w-[200px] max-h-[200px] md:max-w-[240px] md:max-h-[240px]">
+          {/* Right side - Image (50%) */}
+          <div className="w-1/2 relative flex items-center justify-center p-3 md:p-4">
+            <div className="relative w-full h-full max-w-[180px] max-h-[180px] md:max-w-[220px] md:max-h-[220px]">
               <img
                 src={slide.image}
                 alt={slide.title}
