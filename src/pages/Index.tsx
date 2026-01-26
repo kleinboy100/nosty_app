@@ -70,21 +70,21 @@ export default function Index() {
       {/* Hero Section with Slideshow - Compact KFC-style */}
       <section className="relative h-[225px] md:h-[275px] overflow-hidden">
         <HeroSlideshow />
-        <div className="relative container mx-auto px-4 h-full flex flex-col justify-center z-10">
-          <div className="max-w-xl">
+        <div className="relative container mx-auto px-4 h-full flex flex-col z-10">
+          <div className="max-w-xl mt-8">
             <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-bold text-card mb-2 animate-fade-in">
               Fresh & Fast
             </h1>
-            <div className="flex gap-3 animate-slide-up">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                <Input
-                  placeholder="Search meals..."
-                  className="pl-9 h-10 bg-card border-0 shadow-lg text-sm"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
+          </div>
+          <div className="absolute bottom-6 left-4 right-4 md:left-4 md:right-auto animate-slide-up">
+            <div className="relative max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+              <Input
+                placeholder="Search meals..."
+                className="pl-9 h-10 bg-card border-0 shadow-lg text-sm"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
           </div>
         </div>
