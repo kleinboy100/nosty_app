@@ -1,20 +1,14 @@
 # Database & RLS
 
-## Data Isolation
-To prevent data scraping and protect owner privacy, we use **Database Views**:
-- **`restaurants_public`:** This is the primary view for the discovery page. It excludes sensitive columns like `owner_id`, `phone_number`, and `yoco_secret_key`.
+## Storage & Assets
+- **`menu-images` Bucket:** Organized by `restaurant_id`. RLS policies allow public read access but restrict uploads/deletes to the verified restaurant owner.
 
-## Server-Side Enforcement
-We use `SECURITY DEFINER` functions to perform actions that require elevated permissions without granting those permissions to the public role:
-- **`create_validated_order`:** Prevents price manipulation by recalculating totals server-side.
-- **`restaurant_has_online_payment`:** Checks if a restaurant is set up for Yoco without returning the actual API keys to the frontend.
+## Enhanced Functions
+- **`create_validated_order` (Security Definer):** Updated to allow first-time customers (unindexed users) to place orders. It bypasses initial RLS checks to validate the restaurant and items, then binds the order to the user's UUID.
+- **Ownership Verification:** `useRestaurantOwner` hook interacts with a server-side check to determine if the `user.id` matches the `owner_id` of the primary restaurant.
 
-## Core Tables
-- `profiles`: User identity.
-- `restaurants`: Store details.
-- `orders` & `order_items`: Order history and server-validated totals.
-- `payments`: Tracks Yoco `checkoutId` and verification status.- Public restaurant discovery: expose only non-sensitive fields in `restaurants`.
-- Private contact details: restrict `restaurant_private` to restaurant owner/admin only (prevents scraping).
+## Data Access Layer
+- **`restaurants_public`:** Redefined to serve only the primary restaurant (Nosty's) to the frontend, ensuring a "Single App" experience.- Private contact details: restrict `restaurant_private` to restaurant owner/admin only (prevents scraping).
 - Orders: customer sees own orders; restaurant sees orders for their restaurant.
 - Messages: only participants of an order/thread can read/write.
 
