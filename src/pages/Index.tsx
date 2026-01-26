@@ -68,7 +68,7 @@ export default function Index() {
   return (
     <div className="min-h-screen">
       {/* Hero Section with Slideshow - Compact KFC-style */}
-      <section className="relative h-[180px] md:h-[220px] overflow-hidden">
+      <section className="relative h-[225px] md:h-[275px] overflow-hidden">
         <HeroSlideshow />
         <div className="relative container mx-auto px-4 h-full flex flex-col justify-center z-10">
           <div className="max-w-xl">
