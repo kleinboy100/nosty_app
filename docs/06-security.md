@@ -1,22 +1,21 @@
 # Security Documentation
 
-## The Security Model
-KasiConnect operates on the principle that the **Frontend is Public**. We do not trust any data coming from the browser regarding prices or payment status.
+## Hardened Asset Management
+- **Image Uploads:** File type validation (images only) and size limits (5MB) are enforced before Supabase Storage ingestion.
+- **Folder Isolation:** Owners can only access storage folders matching their `restaurant_id`.
 
-## Completed Mitigations (Jan 2026)
+## Location Privacy
+- **Client-Side Geocoding:** Addresses are converted to coordinates on the fly; no persistent storage of customer movement history beyond the specific order requirements.
 
-### 1. Order Price Tampering
-- **Risk:** Users could edit the "Total Price" in the browser before clicking buy.
-- **Fix:** Implemented server-side price lookups during the order creation transaction.
+## Mitigations (Updated Jan 2026)
+### 1. New User Friction
+- **Fix:** Elevated `create_validated_order` permissions to handle new auth users who haven't yet populated the `profiles` table, preventing "Permission Denied" errors at first checkout.
 
-### 2. Webhook Spoofing
-- **Risk:** An attacker could send a fake "Success" message to our webhook URL.
-- **Fix:** Implemented HMAC-SHA256 signature verification using `YOCO_WEBHOOK_SECRET`.
+### 2. Payment Signal Integrity
+- **Fix:** Implemented real-time listener security. Even if a user manually refreshes, the status is fetched directly from the HMAC-verified database record, not local storage.
 
-### 3. Sensitive Data Exposure
-- **Risk:** Restaurant owner phone numbers could be scraped by bots.
-- **Fix:** Created the `restaurants_public` view to filter out contact details for non-authenticated or unauthorized requests.
-
+### 3. Dashboard Concealment
+- **Fix:** UI-level exclusion of administrative tools for non-owners, backed by API-level RLS that rejects dashboard data requests from unauthorized UUIDs.
 ### 4. API Key Leakage
 - **Risk:** Yoco Secret Keys visible in the frontend source code.
 - **Fix:** Moved all Yoco interactions to Supabase Edge Functions. Frontend now only interacts with masked RPC functions.
