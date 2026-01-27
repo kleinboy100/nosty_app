@@ -56,6 +56,33 @@ export default function OrderDetail() {
               description: "Your payment has been processed successfully."
             });
           } else {
+            // Fallback: actively verify checkout status (useful when webhook delivery/signature is not working in test)
+            try {
+              await supabase.functions.invoke('verify-yoco-checkout', {
+                body: { orderId: id }
+              });
+
+              const { data: refreshed } = await supabase
+                .from('orders')
+                .select('*, restaurants(name, address, latitude, longitude)')
+                .eq('id', id)
+                .single();
+
+              if (refreshed) {
+                setOrder(refreshed);
+                if (refreshed.payment_confirmed) {
+                  setAwaitingPaymentConfirmation(false);
+                  toast({
+                    title: "Payment confirmed! ✓",
+                    description: "Your payment has been processed successfully."
+                  });
+                  return;
+                }
+              }
+            } catch {
+              // ignore; polling fallback below will still run
+            }
+
             toast({
               title: "Payment submitted!",
               description: "Waiting for confirmation..."
@@ -118,6 +145,11 @@ export default function OrderDetail() {
     // Stop polling after 60 seconds
     const timeout = setTimeout(() => {
       clearInterval(pollInterval);
+      setAwaitingPaymentConfirmation(false);
+      toast({
+        title: "Still waiting for payment confirmation",
+        description: "If you were charged, it may take a moment to reflect. Please refresh this page in a few seconds."
+      });
     }, 60000);
     
     return () => {
