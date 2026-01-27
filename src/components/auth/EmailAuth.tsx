@@ -1,12 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, RefreshCw } from 'lucide-react';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-
 interface EmailAuthProps {
   onSuccess: () => void;
 }
@@ -19,8 +18,18 @@ export function EmailAuth({ onSuccess }: EmailAuthProps) {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'credentials' | 'otp'>('credentials');
   const [otp, setOtp] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resending, setResending] = useState(false);
   
   const { toast } = useToast();
+
+  // Cooldown timer
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,6 +139,37 @@ export function EmailAuth({ onSuccess }: EmailAuthProps) {
     }
   };
 
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0) return;
+    
+    setResending(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: !isLogin,
+          data: !isLogin ? { full_name: fullName } : undefined
+        }
+      });
+      
+      if (error) {
+        toast({
+          title: "Failed to resend code",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Code sent!",
+          description: "Check your email for the new verification code."
+        });
+        setResendCooldown(60); // 60 second cooldown
+      }
+    } finally {
+      setResending(false);
+    }
+  };
+
   if (step === 'otp') {
     return (
       <form onSubmit={handleVerifyOtp} className="space-y-6">
@@ -169,11 +209,35 @@ export function EmailAuth({ onSuccess }: EmailAuthProps) {
           )}
         </Button>
 
+        <div className="flex items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={handleResendOtp}
+            disabled={resendCooldown > 0 || resending}
+            className="text-sm text-primary hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+          >
+            {resending ? (
+              <>
+                <RefreshCw className="w-3 h-3 animate-spin" />
+                Sending...
+              </>
+            ) : resendCooldown > 0 ? (
+              `Resend code in ${resendCooldown}s`
+            ) : (
+              <>
+                <RefreshCw className="w-3 h-3" />
+                Resend code
+              </>
+            )}
+          </button>
+        </div>
+
         <button
           type="button"
           onClick={() => {
             setStep('credentials');
             setOtp('');
+            setResendCooldown(0);
           }}
           className="w-full text-sm text-muted-foreground hover:text-foreground"
         >
