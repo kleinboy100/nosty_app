@@ -441,6 +441,7 @@ export type Database = {
       }
     }
     Functions: {
+      confirm_cod_payment: { Args: { p_order_id: string }; Returns: boolean }
       create_validated_order:
         | {
             Args: {

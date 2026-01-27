@@ -209,16 +209,12 @@ export default function OrderDetail() {
         window.location.href = checkoutData.checkoutUrl;
         return;
       } else {
-        // Cash on delivery - update payment method and mark as confirmed
-        const { error } = await supabase
-          .from('orders')
-          .update({ 
-            payment_method: 'cash',
-            payment_confirmed: true
-          })
-          .eq('id', order.id);
+        // Cash on delivery - use SECURITY DEFINER RPC for reliable update
+        const { data: success, error } = await supabase
+          .rpc('confirm_cod_payment', { p_order_id: order.id });
 
-        if (error) {
+        if (error || !success) {
+          console.error('COD confirmation error:', error);
           toast({
             title: "Error",
             description: "Failed to confirm payment method. Please try again.",
