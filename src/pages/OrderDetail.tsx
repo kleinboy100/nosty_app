@@ -107,21 +107,39 @@ export default function OrderDetail() {
     if (id) {
       fetchOrder();
       checkExistingReview();
-      const channel = supabase.channel('order-updates').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${id}` }, (payload) => {
-        const newOrder = payload.new as any;
-        
-        // Show push notification if status changed
-        if (previousStatus.current && previousStatus.current !== newOrder.status) {
-          const message = ORDER_STATUS_MESSAGES[newOrder.status];
-          if (message) {
-            showNotification(message.title, { body: message.body, tag: `order-${id}` });
+      
+      // Subscribe to real-time order updates
+      const channel = supabase
+        .channel(`order-detail-${id}`)
+        .on('postgres_changes', { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'orders', 
+          filter: `id=eq.${id}` 
+        }, (payload) => {
+          const newOrder = payload.new as any;
+          
+          // Show push notification if status changed
+          if (previousStatus.current && previousStatus.current !== newOrder.status) {
+            const message = ORDER_STATUS_MESSAGES[newOrder.status];
+            if (message) {
+              showNotification(message.title, { body: message.body, tag: `order-${id}` });
+            }
           }
-        }
-        previousStatus.current = newOrder.status;
+          previousStatus.current = newOrder.status;
+          
+          // Immediately update all order fields from the payload
+          setOrder((prev: any) => ({ ...prev, ...newOrder }));
+        })
+        .subscribe((status) => {
+          if (status === 'CHANNEL_ERROR') {
+            console.error('Realtime channel error, falling back to polling');
+          }
+        });
         
-        setOrder((prev: any) => ({ ...prev, ...newOrder }));
-      }).subscribe();
-      return () => { supabase.removeChannel(channel); };
+      return () => { 
+        supabase.removeChannel(channel); 
+      };
     }
   }, [id, showNotification]);
 
