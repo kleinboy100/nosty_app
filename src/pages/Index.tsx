@@ -72,22 +72,17 @@ export default function Index() {
     <div className="min-h-screen">
       {/* Operating Hours Status Banner */}
       {!statusLoading && (
-        <div className={`py-2 px-4 text-center text-sm font-medium ${
+        <div className={`py-3 px-4 text-center text-sm font-medium ${
           isOpen 
-            ? 'bg-green-500/10 text-green-700 dark:text-green-400 border-b border-green-500/20' 
-            : 'bg-destructive/10 text-destructive border-b border-destructive/20'
+            ? 'bg-success/10 text-success border-b border-success/20' 
+            : 'bg-secondary text-secondary-foreground border-b border-border'
         }`}>
           <div className="container mx-auto flex items-center justify-center gap-2">
+            <Clock className="w-4 h-4" />
             {isOpen ? (
-              <>
-                <Clock className="w-4 h-4" />
-                <span>We're open! Orders accepted until {closingTime}</span>
-              </>
+              <span>We're open! Orders accepted until {closingTime}</span>
             ) : (
-              <>
-                <AlertCircle className="w-4 h-4" />
-                <span>{reason || `We're closed. Open ${openingTime} - ${closingTime}`}</span>
-              </>
+              <span>We're closed • Open {openingTime} - {closingTime}</span>
             )}
           </div>
         </div>
