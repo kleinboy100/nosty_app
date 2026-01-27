@@ -347,8 +347,8 @@ export default function OrderDetail() {
               </p>
             </div>
           )}
-          {/* Payment Processing Indicator */}
-          {awaitingPaymentConfirmation && !order.payment_confirmed && (
+        {/* Payment Processing Indicator - only show when awaiting and not yet confirmed */}
+          {awaitingPaymentConfirmation && !order.payment_confirmed && order.status === 'confirmed' && (
             <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-3">
               <Loader2 className="w-5 h-5 animate-spin text-amber-600" />
               <div>
@@ -358,8 +358,8 @@ export default function OrderDetail() {
             </div>
           )}
           
-          {/* Payment Confirmed Indicator - show briefly after confirmation */}
-          {order.payment_confirmed && order.payment_method === 'online' && order.status === 'confirmed' && (
+          {/* Payment Confirmed Indicator - show when payment is confirmed for online orders */}
+          {order.payment_confirmed && order.payment_method === 'online' && (order.status === 'confirmed' || order.status === 'preparing') && (
             <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-green-600" />
               <p className="text-sm text-green-800">
