@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { createHmac } from "https://deno.land/std@0.177.0/node/crypto.ts";
+import { createHmac, timingSafeEqual } from "https://deno.land/std@0.177.0/node/crypto.ts";
+import { Buffer } from "https://deno.land/std@0.177.0/node/buffer.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,7 +46,20 @@ Deno.serve(async (req) => {
       .digest('hex');
 
     // Constant-time comparison to prevent timing attacks
-    if (signature !== computedSignature) {
+    const signatureBuffer = Buffer.from(signature, 'utf8');
+    const computedBuffer = Buffer.from(computedSignature, 'utf8');
+    
+    // Length check first (not timing sensitive - lengths are fixed for HMAC-SHA256)
+    if (signatureBuffer.length !== computedBuffer.length) {
+      console.error('Invalid webhook signature length - rejecting request');
+      return new Response(
+        JSON.stringify({ error: 'Invalid signature' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Use timing-safe comparison to prevent timing attacks
+    if (!timingSafeEqual(signatureBuffer, computedBuffer)) {
       console.error('Invalid webhook signature - rejecting request');
       return new Response(
         JSON.stringify({ error: 'Invalid signature' }),
