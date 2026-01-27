@@ -8,7 +8,7 @@ interface Review {
   rating: number;
   comment: string | null;
   created_at: string;
-  user_id: string;
+  // user_id is intentionally excluded from public view for privacy
 }
 
 interface ReviewListProps {
@@ -21,9 +21,10 @@ export function ReviewList({ restaurantId }: ReviewListProps) {
 
   useEffect(() => {
     const fetchReviews = async () => {
+      // Use reviews_public view to prevent user_id exposure
       const { data, error } = await supabase
-        .from('reviews')
-        .select('*')
+        .from('reviews_public')
+        .select('id, restaurant_id, rating, comment, created_at')
         .eq('restaurant_id', restaurantId)
         .order('created_at', { ascending: false })
         .limit(10);
