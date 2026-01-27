@@ -61,9 +61,11 @@ export default function RestaurantDashboard() {
           filter: `restaurant_id=eq.${selectedRestaurant}`
         }, (payload) => {
           const updatedOrder = payload.new as any;
-          // Update the specific order in state for faster UI response
+          // Immediately update the specific order in state with all new fields
           setOrders(prev => prev.map(o => 
-            o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o
+            o.id === updatedOrder.id 
+              ? { ...o, ...updatedOrder } 
+              : o
           ));
         })
         .subscribe();
