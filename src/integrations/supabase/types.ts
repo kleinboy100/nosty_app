@@ -325,10 +325,13 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          is_accepting_orders: boolean | null
           is_active: boolean | null
           latitude: number | null
           longitude: number | null
           name: string
+          operating_hours_end: string | null
+          operating_hours_start: string | null
           owner_id: string
           phone: string | null
           rating: number | null
@@ -342,10 +345,13 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_accepting_orders?: boolean | null
           is_active?: boolean | null
           latitude?: number | null
           longitude?: number | null
           name: string
+          operating_hours_end?: string | null
+          operating_hours_start?: string | null
           owner_id: string
           phone?: string | null
           rating?: number | null
@@ -359,10 +365,13 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_accepting_orders?: boolean | null
           is_active?: boolean | null
           latitude?: number | null
           longitude?: number | null
           name?: string
+          operating_hours_end?: string | null
+          operating_hours_start?: string | null
           owner_id?: string
           phone?: string | null
           rating?: number | null
