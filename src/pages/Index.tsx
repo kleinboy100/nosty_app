@@ -32,7 +32,7 @@ export default function Index() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   
-  const { isOpen, reason, openingTime, closingTime, loading: statusLoading } = useRestaurantOperatingStatus(NOSTY_RESTAURANT_ID);
+  const { isOpen, loading: statusLoading } = useRestaurantOperatingStatus(NOSTY_RESTAURANT_ID);
 
   useEffect(() => {
     fetchData();
@@ -70,7 +70,7 @@ export default function Index() {
 
   return (
     <div className="min-h-screen">
-      {/* Operating Hours Status Banner */}
+      {/* Operating Status Banner */}
       {!statusLoading && (
         <div className={`py-3 px-4 text-center text-sm font-medium ${
           isOpen 
@@ -79,11 +79,7 @@ export default function Index() {
         }`}>
           <div className="container mx-auto flex items-center justify-center gap-2">
             <Clock className="w-4 h-4" />
-            {isOpen ? (
-              <span>We're open! Orders accepted until {closingTime}</span>
-            ) : (
-              <span>We're closed • Open {openingTime} - {closingTime}</span>
-            )}
+            <span>{isOpen ? "We're open!" : "We're closed"}</span>
           </div>
         </div>
       )}

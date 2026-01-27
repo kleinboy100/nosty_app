@@ -21,7 +21,7 @@ export function useRestaurantOperatingStatus(restaurantId: string | null) {
     // Query from public view - accessible to all users including anonymous
     const { data, error } = await supabase
       .from('restaurants_public')
-      .select('is_accepting_orders, operating_hours_start, operating_hours_end')
+      .select('is_accepting_orders')
       .eq('id', restaurantId)
       .maybeSingle();
 
@@ -29,46 +29,16 @@ export function useRestaurantOperatingStatus(restaurantId: string | null) {
       // Default to closed if we can't fetch the restaurant
       setStatus({ 
         isOpen: false, 
-        reason: 'Unable to check restaurant status',
-        openingTime: '09:00',
-        closingTime: '18:00'
+        reason: 'Unable to check restaurant status'
       });
       setLoading(false);
       return;
     }
 
-    // Check manual toggle first
-    if (!data.is_accepting_orders) {
-      setStatus({ 
-        isOpen: false, 
-        reason: 'Restaurant is currently not accepting orders',
-        openingTime: data.operating_hours_start?.slice(0, 5),
-        closingTime: data.operating_hours_end?.slice(0, 5)
-      });
-      setLoading(false);
-      return;
-    }
-
-    // Check operating hours
-    const now = new Date();
-    const currentTime = now.toTimeString().slice(0, 5); // "HH:MM"
-    const openTime = data.operating_hours_start?.slice(0, 5) || '09:00';
-    const closeTime = data.operating_hours_end?.slice(0, 5) || '18:00';
-
-    if (currentTime < openTime || currentTime > closeTime) {
-      setStatus({ 
-        isOpen: false, 
-        reason: `Restaurant is closed. Open from ${openTime} to ${closeTime}`,
-        openingTime: openTime,
-        closingTime: closeTime
-      });
-    } else {
-      setStatus({ 
-        isOpen: true,
-        openingTime: openTime,
-        closingTime: closeTime
-      });
-    }
+    // Status is controlled purely by the toggle
+    setStatus({ 
+      isOpen: data.is_accepting_orders ?? false
+    });
     
     setLoading(false);
   }, [restaurantId]);
@@ -99,11 +69,8 @@ export function useRestaurantOperatingStatus(restaurantId: string | null) {
       )
       .subscribe();
     
-    // Also check status every minute for time-based changes
-    const interval = setInterval(checkStatus, 60000);
     
     return () => {
-      clearInterval(interval);
       supabase.removeChannel(channel);
     };
   }, [restaurantId, checkStatus]);
