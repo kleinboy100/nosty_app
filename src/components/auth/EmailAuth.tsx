@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, Lock, User, ArrowRight, RefreshCw } from 'lucide-react';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { Mail, Lock, User, ArrowRight, CheckCircle } from 'lucide-react';
+
 interface EmailAuthProps {
   onSuccess: () => void;
 }
@@ -16,20 +16,9 @@ export function EmailAuth({ onSuccess }: EmailAuthProps) {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<'credentials' | 'otp'>('credentials');
-  const [otp, setOtp] = useState('');
-  const [resendCooldown, setResendCooldown] = useState(0);
-  const [resending, setResending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   
   const { toast } = useToast();
-
-  // Cooldown timer
-  useEffect(() => {
-    if (resendCooldown > 0) {
-      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [resendCooldown]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,16 +26,17 @@ export function EmailAuth({ onSuccess }: EmailAuthProps) {
 
     try {
       if (isLogin) {
-        // For login, try with OTP first
+        // For login, send magic link
         const { error } = await supabase.auth.signInWithOtp({
           email,
           options: {
             shouldCreateUser: false,
+            emailRedirectTo: `${window.location.origin}/`,
           }
         });
         
         if (error) {
-          // If OTP fails (user might not exist or other error), try password
+          // If magic link fails (user might not exist), try password login
           const { error: passwordError } = await supabase.auth.signInWithPassword({
             email,
             password
@@ -66,21 +56,21 @@ export function EmailAuth({ onSuccess }: EmailAuthProps) {
             onSuccess();
           }
         } else {
+          setEmailSent(true);
           toast({
             title: "Check your email",
-            description: "We sent you a 6-digit verification code."
+            description: "We sent you a confirmation link. Click the link to sign in."
           });
-          setStep('otp');
         }
       } else {
-        // For signup, send OTP for email verification
+        // For signup, send magic link for email verification
         const { error } = await supabase.auth.signInWithOtp({
           email,
           options: {
             shouldCreateUser: true,
+            emailRedirectTo: `${window.location.origin}/`,
             data: { 
               full_name: fullName,
-              password_pending: password // Store temporarily
             }
           }
         });
@@ -92,11 +82,11 @@ export function EmailAuth({ onSuccess }: EmailAuthProps) {
             variant: "destructive"
           });
         } else {
+          setEmailSent(true);
           toast({
             title: "Verify your email",
-            description: "We sent you a 6-digit verification code."
+            description: "We sent you a confirmation link. Click the link to complete registration."
           });
-          setStep('otp');
         }
       }
     } finally {
@@ -104,146 +94,36 @@ export function EmailAuth({ onSuccess }: EmailAuthProps) {
     }
   };
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otp.length !== 6) return;
-
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        email,
-        token: otp,
-        type: 'email'
-      });
-
-      if (error) {
-        toast({
-          title: "Verification failed",
-          description: error.message,
-          variant: "destructive"
-        });
-      } else {
-        // If signup, update the user's password
-        if (!isLogin && password) {
-          await supabase.auth.updateUser({ password });
-        }
-        
-        toast({
-          title: isLogin ? "Welcome back!" : "Account created!",
-          description: isLogin ? "You have successfully signed in." : "You can now start ordering food."
-        });
-        onSuccess();
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResendOtp = async () => {
-    if (resendCooldown > 0) return;
-    
-    setResending(true);
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: !isLogin,
-          data: !isLogin ? { full_name: fullName } : undefined
-        }
-      });
-      
-      if (error) {
-        toast({
-          title: "Failed to resend code",
-          description: error.message,
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Code sent!",
-          description: "Check your email for the new verification code."
-        });
-        setResendCooldown(60); // 60 second cooldown
-      }
-    } finally {
-      setResending(false);
-    }
-  };
-
-  if (step === 'otp') {
+  if (emailSent) {
     return (
-      <form onSubmit={handleVerifyOtp} className="space-y-6">
-        <div className="space-y-2">
-          <Label>Enter verification code</Label>
-          <p className="text-sm text-muted-foreground mb-4">
-            We sent a 6-digit code to {email}
-          </p>
-          <div className="flex justify-center">
-            <InputOTP
-              maxLength={6}
-              value={otp}
-              onChange={(value) => setOtp(value)}
-            >
-              <InputOTPGroup>
-                <InputOTPSlot index={0} />
-                <InputOTPSlot index={1} />
-                <InputOTPSlot index={2} />
-                <InputOTPSlot index={3} />
-                <InputOTPSlot index={4} />
-                <InputOTPSlot index={5} />
-              </InputOTPGroup>
-            </InputOTP>
+      <div className="space-y-6 text-center">
+        <div className="flex justify-center">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+            <CheckCircle className="w-8 h-8 text-primary" />
           </div>
         </div>
-
-        <Button 
-          type="submit" 
-          className="w-full btn-primary h-12"
-          disabled={loading || otp.length !== 6}
-        >
-          {loading ? 'Verifying...' : (
-            <>
-              Verify & Continue
-              <ArrowRight className="ml-2" size={18} />
-            </>
-          )}
-        </Button>
-
-        <div className="flex items-center justify-center gap-2">
-          <button
-            type="button"
-            onClick={handleResendOtp}
-            disabled={resendCooldown > 0 || resending}
-            className="text-sm text-primary hover:underline font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-          >
-            {resending ? (
-              <>
-                <RefreshCw className="w-3 h-3 animate-spin" />
-                Sending...
-              </>
-            ) : resendCooldown > 0 ? (
-              `Resend code in ${resendCooldown}s`
-            ) : (
-              <>
-                <RefreshCw className="w-3 h-3" />
-                Resend code
-              </>
-            )}
-          </button>
+        
+        <div className="space-y-2">
+          <h2 className="text-xl font-semibold">Check your email</h2>
+          <p className="text-muted-foreground">
+            We sent a confirmation link to <strong>{email}</strong>
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Click the link in your email to {isLogin ? 'sign in' : 'complete your registration'}.
+          </p>
         </div>
 
         <button
           type="button"
           onClick={() => {
-            setStep('credentials');
-            setOtp('');
-            setResendCooldown(0);
+            setEmailSent(false);
+            setEmail('');
           }}
-          className="w-full text-sm text-muted-foreground hover:text-foreground"
+          className="text-sm text-primary hover:underline font-medium"
         >
           Use a different email
         </button>
-      </form>
+      </div>
     );
   }
 
@@ -298,6 +178,9 @@ export function EmailAuth({ onSuccess }: EmailAuthProps) {
             minLength={6}
           />
         </div>
+        <p className="text-xs text-muted-foreground">
+          {isLogin ? 'Or we\'ll send you a magic link to sign in' : 'Set a password for your account'}
+        </p>
       </div>
 
       <Button 
