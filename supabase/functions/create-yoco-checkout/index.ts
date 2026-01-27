@@ -5,6 +5,35 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Validate redirect URLs to prevent open redirect attacks
+const validateRedirectUrl = (url: string | undefined, allowedOrigin: string, defaultPath: string): string => {
+  if (!url) {
+    return `${allowedOrigin}${defaultPath}`;
+  }
+  
+  try {
+    const parsed = new URL(url);
+    
+    // Only allow same origin to prevent phishing redirects
+    if (parsed.origin !== allowedOrigin) {
+      console.warn(`Rejected redirect to different origin: ${parsed.origin}, expected: ${allowedOrigin}`);
+      return `${allowedOrigin}${defaultPath}`;
+    }
+    
+    // Validate path format - only allow /orders/{uuid} paths
+    const uuidPattern = /^\/orders\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+    if (!uuidPattern.test(parsed.pathname)) {
+      console.warn(`Rejected redirect to non-order path: ${parsed.pathname}`);
+      return `${allowedOrigin}${defaultPath}`;
+    }
+    
+    return url;
+  } catch (error) {
+    console.error('Invalid URL provided:', error);
+    return `${allowedOrigin}${defaultPath}`;
+  }
+};
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -53,7 +82,28 @@ Deno.serve(async (req) => {
     // Amount in cents (Yoco expects cents)
     const amountInCents = Math.round(order.total_amount * 100);
 
-    // Create Yoco checkout
+    // Determine allowed origin for redirect validation
+    const requestOrigin = req.headers.get('origin');
+    const allowedOrigin = requestOrigin || new URL(supabaseUrl).origin;
+    
+    // Validate all redirect URLs to prevent open redirect attacks
+    const validatedSuccessUrl = validateRedirectUrl(
+      successUrl, 
+      allowedOrigin, 
+      `/orders/${orderId}?payment=success`
+    );
+    const validatedCancelUrl = validateRedirectUrl(
+      cancelUrl, 
+      allowedOrigin, 
+      `/orders/${orderId}?payment=cancelled`
+    );
+    const validatedFailureUrl = validateRedirectUrl(
+      failureUrl, 
+      allowedOrigin, 
+      `/orders/${orderId}?payment=failed`
+    );
+
+    // Create Yoco checkout with validated URLs
     const yocoResponse = await fetch('https://payments.yoco.com/api/checkouts', {
       method: 'POST',
       headers: {
@@ -63,9 +113,9 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         amount: amountInCents,
         currency: 'ZAR',
-        successUrl: successUrl || `${req.headers.get('origin')}/orders/${orderId}?payment=success`,
-        cancelUrl: cancelUrl || `${req.headers.get('origin')}/orders/${orderId}?payment=cancelled`,
-        failureUrl: failureUrl || `${req.headers.get('origin')}/orders/${orderId}?payment=failed`,
+        successUrl: validatedSuccessUrl,
+        cancelUrl: validatedCancelUrl,
+        failureUrl: validatedFailureUrl,
         metadata: {
           orderId: orderId,
           restaurantName: restaurant.name,
