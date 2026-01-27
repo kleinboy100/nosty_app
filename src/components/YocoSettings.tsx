@@ -69,13 +69,13 @@ export function YocoSettings({ restaurantId }: YocoSettingsProps) {
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('restaurants')
-        .update({
-          yoco_secret_key: secretKey,
-          yoco_public_key: publicKey || null,
-        })
-        .eq('id', restaurantId);
+      // Use secure RPC function to update credentials (prevents direct table access)
+      const { data, error } = await supabase
+        .rpc('update_restaurant_payment_credentials', {
+          p_restaurant_id: restaurantId,
+          p_yoco_secret_key: secretKey,
+          p_yoco_public_key: publicKey || null,
+        });
 
       if (error) throw error;
 
@@ -85,6 +85,7 @@ export function YocoSettings({ restaurantId }: YocoSettingsProps) {
       });
       setHasExistingKeys(true);
       setSecretKey('');
+      setPublicKey('');
     } catch (error) {
       console.error('Error saving Yoco settings:', error);
       toast({
@@ -100,13 +101,11 @@ export function YocoSettings({ restaurantId }: YocoSettingsProps) {
   const handleRemove = async () => {
     setLoading(true);
     try {
+      // Use secure RPC function to remove credentials
       const { error } = await supabase
-        .from('restaurants')
-        .update({
-          yoco_secret_key: null,
-          yoco_public_key: null,
-        })
-        .eq('id', restaurantId);
+        .rpc('remove_restaurant_payment_credentials', {
+          p_restaurant_id: restaurantId,
+        });
 
       if (error) throw error;
 
