@@ -1,16 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EmailAuth } from '@/components/auth/EmailAuth';
-import { PhoneAuth } from '@/components/auth/PhoneAuth';
 import { GoogleAuth } from '@/components/auth/GoogleAuth';
-import { Mail, Phone } from 'lucide-react';
 
 export default function Auth() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
 
   useEffect(() => {
     if (user) {
@@ -35,26 +31,7 @@ export default function Auth() {
             </p>
           </div>
 
-          <Tabs value={authMethod} onValueChange={(v) => setAuthMethod(v as 'email' | 'phone')} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="email" className="flex items-center gap-2">
-                <Mail size={16} />
-                Email
-              </TabsTrigger>
-              <TabsTrigger value="phone" className="flex items-center gap-2">
-                <Phone size={16} />
-                Phone
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="email">
-              <EmailAuth onSuccess={handleSuccess} />
-            </TabsContent>
-
-            <TabsContent value="phone">
-              <PhoneAuth onSuccess={handleSuccess} />
-            </TabsContent>
-          </Tabs>
+          <EmailAuth onSuccess={handleSuccess} />
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">

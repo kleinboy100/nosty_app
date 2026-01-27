@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 interface EmailAuthProps {
   onSuccess: () => void;
@@ -16,8 +17,9 @@ export function EmailAuth({ onSuccess }: EmailAuthProps) {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState<'credentials' | 'otp'>('credentials');
+  const [otp, setOtp] = useState('');
   
-  const { signIn, signUp } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,22 +28,54 @@ export function EmailAuth({ onSuccess }: EmailAuthProps) {
 
     try {
       if (isLogin) {
-        const { error } = await signIn(email, password);
+        // For login, try with OTP first
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            shouldCreateUser: false,
+          }
+        });
+        
         if (error) {
-          toast({
-            title: "Error signing in",
-            description: error.message,
-            variant: "destructive"
+          // If OTP fails (user might not exist or other error), try password
+          const { error: passwordError } = await supabase.auth.signInWithPassword({
+            email,
+            password
           });
+          
+          if (passwordError) {
+            toast({
+              title: "Error signing in",
+              description: passwordError.message,
+              variant: "destructive"
+            });
+          } else {
+            toast({
+              title: "Welcome back!",
+              description: "You have successfully signed in."
+            });
+            onSuccess();
+          }
         } else {
           toast({
-            title: "Welcome back!",
-            description: "You have successfully signed in."
+            title: "Check your email",
+            description: "We sent you a 6-digit verification code."
           });
-          onSuccess();
+          setStep('otp');
         }
       } else {
-        const { error } = await signUp(email, password, fullName);
+        // For signup, send OTP for email verification
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            shouldCreateUser: true,
+            data: { 
+              full_name: fullName,
+              password_pending: password // Store temporarily
+            }
+          }
+        });
+        
         if (error) {
           toast({
             title: "Error signing up",
@@ -50,16 +84,104 @@ export function EmailAuth({ onSuccess }: EmailAuthProps) {
           });
         } else {
           toast({
-            title: "Account created!",
-            description: "You can now start ordering food."
+            title: "Verify your email",
+            description: "We sent you a 6-digit verification code."
           });
-          onSuccess();
+          setStep('otp');
         }
       }
     } finally {
       setLoading(false);
     }
   };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otp.length !== 6) return;
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token: otp,
+        type: 'email'
+      });
+
+      if (error) {
+        toast({
+          title: "Verification failed",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        // If signup, update the user's password
+        if (!isLogin && password) {
+          await supabase.auth.updateUser({ password });
+        }
+        
+        toast({
+          title: isLogin ? "Welcome back!" : "Account created!",
+          description: isLogin ? "You have successfully signed in." : "You can now start ordering food."
+        });
+        onSuccess();
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (step === 'otp') {
+    return (
+      <form onSubmit={handleVerifyOtp} className="space-y-6">
+        <div className="space-y-2">
+          <Label>Enter verification code</Label>
+          <p className="text-sm text-muted-foreground mb-4">
+            We sent a 6-digit code to {email}
+          </p>
+          <div className="flex justify-center">
+            <InputOTP
+              maxLength={6}
+              value={otp}
+              onChange={(value) => setOtp(value)}
+            >
+              <InputOTPGroup>
+                <InputOTPSlot index={0} />
+                <InputOTPSlot index={1} />
+                <InputOTPSlot index={2} />
+                <InputOTPSlot index={3} />
+                <InputOTPSlot index={4} />
+                <InputOTPSlot index={5} />
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
+        </div>
+
+        <Button 
+          type="submit" 
+          className="w-full btn-primary h-12"
+          disabled={loading || otp.length !== 6}
+        >
+          {loading ? 'Verifying...' : (
+            <>
+              Verify & Continue
+              <ArrowRight className="ml-2" size={18} />
+            </>
+          )}
+        </Button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setStep('credentials');
+            setOtp('');
+          }}
+          className="w-full text-sm text-muted-foreground hover:text-foreground"
+        >
+          Use a different email
+        </button>
+      </form>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">

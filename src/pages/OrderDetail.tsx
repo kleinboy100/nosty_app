@@ -38,10 +38,33 @@ export default function OrderDetail() {
     if (paymentStatus === 'success') {
       toastShownRef.current = true;
       setAwaitingPaymentConfirmation(true);
-      toast({
-        title: "Payment submitted!",
-        description: "Waiting for confirmation..."
-      });
+      
+      // Immediately refetch order to get latest payment status
+      const refetchOrder = async () => {
+        const { data } = await supabase
+          .from('orders')
+          .select('*, restaurants(name, address, latitude, longitude)')
+          .eq('id', id)
+          .single();
+        
+        if (data) {
+          setOrder(data);
+          if (data.payment_confirmed) {
+            setAwaitingPaymentConfirmation(false);
+            toast({
+              title: "Payment confirmed! ✓",
+              description: "Your payment has been processed successfully."
+            });
+          } else {
+            toast({
+              title: "Payment submitted!",
+              description: "Waiting for confirmation..."
+            });
+          }
+        }
+      };
+      
+      refetchOrder();
     } else if (paymentStatus === 'cancelled') {
       toastShownRef.current = true;
       toast({
@@ -57,7 +80,7 @@ export default function OrderDetail() {
         variant: "destructive"
       });
     }
-  }, [searchParams, toast]);
+  }, [searchParams, toast, id]);
 
   // Poll for payment confirmation when awaiting
   useEffect(() => {
