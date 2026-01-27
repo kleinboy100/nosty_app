@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
     // Get order details with restaurant info
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('*, restaurants(yoco_secret_key, name)')
+      .select('*, restaurants(name)')
       .eq('id', orderId)
       .single();
 
@@ -71,8 +71,16 @@ Deno.serve(async (req) => {
     }
 
     const restaurant = order.restaurants;
-    
-    if (!restaurant?.yoco_secret_key) {
+
+    // Fetch payment credentials from secure table (only accessible via service role)
+    const { data: credentials, error: credentialsError } = await supabase
+      .from('restaurant_payment_credentials')
+      .select('yoco_secret_key')
+      .eq('restaurant_id', order.restaurant_id)
+      .single();
+
+    if (credentialsError || !credentials?.yoco_secret_key) {
+      console.error('Credentials fetch error:', credentialsError);
       return new Response(
         JSON.stringify({ error: 'Restaurant has not configured online payments. Please contact the restaurant.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -107,7 +115,7 @@ Deno.serve(async (req) => {
     const yocoResponse = await fetch('https://payments.yoco.com/api/checkouts', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${restaurant.yoco_secret_key}`,
+        'Authorization': `Bearer ${credentials.yoco_secret_key}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({

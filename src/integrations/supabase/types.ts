@@ -274,6 +274,48 @@ export type Database = {
         }
         Relationships: []
       }
+      restaurant_payment_credentials: {
+        Row: {
+          created_at: string
+          id: string
+          restaurant_id: string
+          updated_at: string
+          yoco_public_key: string | null
+          yoco_secret_key: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          restaurant_id: string
+          updated_at?: string
+          yoco_public_key?: string | null
+          yoco_secret_key?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          restaurant_id?: string
+          updated_at?: string
+          yoco_public_key?: string | null
+          yoco_secret_key?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_payment_credentials_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: true
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_payment_credentials_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: true
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restaurants: {
         Row: {
           address: string
@@ -291,8 +333,6 @@ export type Database = {
           phone: string | null
           rating: number | null
           updated_at: string
-          yoco_public_key: string | null
-          yoco_secret_key: string | null
         }
         Insert: {
           address: string
@@ -310,8 +350,6 @@ export type Database = {
           phone?: string | null
           rating?: number | null
           updated_at?: string
-          yoco_public_key?: string | null
-          yoco_secret_key?: string | null
         }
         Update: {
           address?: string
@@ -329,8 +367,6 @@ export type Database = {
           phone?: string | null
           rating?: number | null
           updated_at?: string
-          yoco_public_key?: string | null
-          yoco_secret_key?: string | null
         }
         Relationships: []
       }
@@ -468,8 +504,20 @@ export type Database = {
         Args: { p_restaurant_id: string }
         Returns: boolean
       }
+      remove_restaurant_payment_credentials: {
+        Args: { p_restaurant_id: string }
+        Returns: boolean
+      }
       restaurant_has_online_payment: {
         Args: { p_restaurant_id: string }
+        Returns: boolean
+      }
+      update_restaurant_payment_credentials: {
+        Args: {
+          p_restaurant_id: string
+          p_yoco_public_key: string
+          p_yoco_secret_key: string
+        }
         Returns: boolean
       }
       user_has_order_at_restaurant: {
