@@ -21,18 +21,18 @@ export function useRestaurantOperatingStatus(restaurantId: string | null) {
     const checkStatus = async () => {
       setLoading(true);
       
-      // First try public view, then private if user is authenticated
+      // Query from public view - accessible to all users including anonymous
       const { data, error } = await supabase
-        .from('restaurants')
+        .from('restaurants_public')
         .select('is_accepting_orders, operating_hours_start, operating_hours_end')
         .eq('id', restaurantId)
         .maybeSingle();
 
       if (error || !data) {
-        // Default to open if we can't fetch (e.g., RLS issue for unauthenticated users)
-        // The restaurant exists (hardcoded ID), we just can't read the settings
+        // Default to closed if we can't fetch the restaurant
         setStatus({ 
-          isOpen: true, 
+          isOpen: false, 
+          reason: 'Unable to check restaurant status',
           openingTime: '09:00',
           closingTime: '18:00'
         });
