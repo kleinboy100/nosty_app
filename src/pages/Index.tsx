@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Search } from 'lucide-react';
+import { Search, Clock, AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { KFCMenuItem } from '@/components/KFCMenuItem';
 import { HeroSlideshow } from '@/components/HeroSlideshow';
 import { supabase } from '@/integrations/supabase/client';
+import { useRestaurantOperatingStatus } from '@/hooks/useRestaurantOperatingStatus';
 
 // Nosty's restaurant ID
 const NOSTY_RESTAURANT_ID = '7f5250bb-263f-4bca-a4af-d325f761542b';
@@ -30,6 +31,8 @@ export default function Index() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  
+  const { isOpen, reason, openingTime, closingTime, loading: statusLoading } = useRestaurantOperatingStatus(NOSTY_RESTAURANT_ID);
 
   useEffect(() => {
     fetchData();
@@ -67,6 +70,29 @@ export default function Index() {
 
   return (
     <div className="min-h-screen">
+      {/* Operating Hours Status Banner */}
+      {!statusLoading && (
+        <div className={`py-2 px-4 text-center text-sm font-medium ${
+          isOpen 
+            ? 'bg-green-500/10 text-green-700 dark:text-green-400 border-b border-green-500/20' 
+            : 'bg-destructive/10 text-destructive border-b border-destructive/20'
+        }`}>
+          <div className="container mx-auto flex items-center justify-center gap-2">
+            {isOpen ? (
+              <>
+                <Clock className="w-4 h-4" />
+                <span>We're open! Orders accepted until {closingTime}</span>
+              </>
+            ) : (
+              <>
+                <AlertCircle className="w-4 h-4" />
+                <span>{reason || `We're closed. Open ${openingTime} - ${closingTime}`}</span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Hero Section with Slideshow - Compact KFC-style */}
       <section className="relative h-[225px] md:h-[275px] overflow-hidden">
         <HeroSlideshow 
@@ -144,7 +170,6 @@ export default function Index() {
               {filteredItems.map(item => (
                 <KFCMenuItem
                   key={item.id}
-                  id={item.id}
                   name={item.name}
                   description={item.description}
                   price={Number(item.price)}
@@ -152,6 +177,7 @@ export default function Index() {
                   category={item.category}
                   restaurantId={restaurant?.id || NOSTY_RESTAURANT_ID}
                   restaurantName={restaurant?.name || "Nosty's Fresh Fast Food"}
+                  id={item.id}
                 />
               ))}
             </div>
