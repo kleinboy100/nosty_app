@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, Minus, Plus, ShoppingBag, ArrowLeft, Bell, Loader2 } from 'lucide-react';
+import { Trash2, Minus, Plus, ShoppingBag, ArrowLeft, Bell, Loader2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useRestaurantOperatingStatus } from '@/hooks/useRestaurantOperatingStatus';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { OrderTypeSelector } from '@/components/OrderTypeSelector';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,6 +22,7 @@ export default function Cart() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { permission, requestPermission, supported } = usePushNotifications();
+  const { isOpen, reason, openingTime, closingTime, loading: statusLoading } = useRestaurantOperatingStatus(restaurantId);
   
   const [orderType, setOrderType] = useState<'delivery' | 'collection'>('delivery');
   const [deliveryAddress, setDeliveryAddress] = useState('');
@@ -45,6 +47,15 @@ export default function Cart() {
   };
 
   const handlePlaceOrder = async () => {
+    if (!isOpen) {
+      toast({
+        title: "Restaurant closed",
+        description: reason || "This restaurant is not accepting orders right now.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!user) {
       toast({
         title: "Sign in required",
@@ -314,16 +325,36 @@ export default function Cart() {
                 </div>
               </div>
 
+              {/* Restaurant Closed Warning */}
+              {!statusLoading && !isOpen && (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-4">
+                  <div className="flex items-start gap-3">
+                    <Clock className="text-destructive mt-0.5 shrink-0" size={20} />
+                    <div>
+                      <p className="text-sm font-medium text-destructive">Restaurant Closed</p>
+                      <p className="text-xs text-destructive/80 mt-1">{reason}</p>
+                      {openingTime && closingTime && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Hours: {openingTime} - {closingTime}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <Button 
                 className="w-full btn-primary h-12"
                 onClick={handlePlaceOrder}
-                disabled={loading}
+                disabled={loading || statusLoading || !isOpen}
               >
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
                     Submitting Order...
                   </>
+                ) : !isOpen ? (
+                  'Restaurant Closed'
                 ) : (
                   'Place Order'
                 )}

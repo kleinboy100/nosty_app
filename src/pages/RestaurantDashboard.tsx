@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { RestaurantOrderCard } from '@/components/RestaurantOrderCard';
 import { YocoSettings } from '@/components/YocoSettings';
 import { MenuManager } from '@/components/MenuManager';
+import { OperatingHoursSettings } from '@/components/OperatingHoursSettings';
 import { Plus, Store, Bell, Volume2, Settings, UtensilsCrossed } from 'lucide-react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
@@ -271,9 +272,15 @@ export default function RestaurantDashboard() {
                 <MenuManager restaurantId={selectedRestaurant} />
               </TabsContent>
               <TabsContent value="settings">
-                <div className="max-w-xl">
-                  <h2 className="font-semibold text-lg mb-4">Payment Settings</h2>
-                  <YocoSettings restaurantId={selectedRestaurant} />
+                <div className="max-w-xl space-y-8">
+                  <div>
+                    <h2 className="font-semibold text-lg mb-4">Operating Hours</h2>
+                    <OperatingHoursSettings restaurantId={selectedRestaurant} />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-lg mb-4">Payment Settings</h2>
+                    <YocoSettings restaurantId={selectedRestaurant} />
+                  </div>
                 </div>
               </TabsContent>
             </Tabs>
