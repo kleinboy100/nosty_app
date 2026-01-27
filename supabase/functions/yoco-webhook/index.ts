@@ -16,40 +16,44 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const webhookSecret = Deno.env.get('YOCO_WEBHOOK_SECRET');
     
+    // SECURITY: Require webhook secret to be configured - reject all requests otherwise
+    if (!webhookSecret) {
+      console.error('YOCO_WEBHOOK_SECRET not configured - rejecting webhook for security');
+      return new Response(
+        JSON.stringify({ error: 'Webhook verification not configured' }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     // Get signature from header for verification
     const signature = req.headers.get('x-yoco-signature');
     
+    if (!signature) {
+      console.error('Missing webhook signature - rejecting request');
+      return new Response(
+        JSON.stringify({ error: 'Missing signature' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     // Get raw body for signature verification
     const rawBody = await req.text();
-    
-    // Verify webhook signature if secret is configured
-    if (webhookSecret) {
-      if (!signature) {
-        console.error('Missing webhook signature - rejecting request');
-        return new Response(
-          JSON.stringify({ error: 'Missing signature' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
 
-      // Compute expected signature using HMAC-SHA256
-      const computedSignature = createHmac('sha256', webhookSecret)
-        .update(rawBody)
-        .digest('hex');
+    // Compute expected signature using HMAC-SHA256
+    const computedSignature = createHmac('sha256', webhookSecret)
+      .update(rawBody)
+      .digest('hex');
 
-      // Constant-time comparison to prevent timing attacks
-      if (signature !== computedSignature) {
-        console.error('Invalid webhook signature - rejecting request');
-        return new Response(
-          JSON.stringify({ error: 'Invalid signature' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      console.log('Webhook signature verified successfully');
-    } else {
-      console.warn('YOCO_WEBHOOK_SECRET not configured - signature verification skipped (NOT RECOMMENDED FOR PRODUCTION)');
+    // Constant-time comparison to prevent timing attacks
+    if (signature !== computedSignature) {
+      console.error('Invalid webhook signature - rejecting request');
+      return new Response(
+        JSON.stringify({ error: 'Invalid signature' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+    
+    console.log('Webhook signature verified successfully');
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
