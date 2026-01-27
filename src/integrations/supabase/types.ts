@@ -443,10 +443,13 @@ export type Database = {
           description: string | null
           id: string | null
           image_url: string | null
+          is_accepting_orders: boolean | null
           is_active: boolean | null
           latitude: number | null
           longitude: number | null
           name: string | null
+          operating_hours_end: string | null
+          operating_hours_start: string | null
           rating: number | null
           updated_at: string | null
         }
@@ -459,10 +462,13 @@ export type Database = {
           description?: string | null
           id?: string | null
           image_url?: string | null
+          is_accepting_orders?: boolean | null
           is_active?: boolean | null
           latitude?: number | null
           longitude?: number | null
           name?: string | null
+          operating_hours_end?: string | null
+          operating_hours_start?: string | null
           rating?: number | null
           updated_at?: string | null
         }
@@ -475,10 +481,13 @@ export type Database = {
           description?: string | null
           id?: string | null
           image_url?: string | null
+          is_accepting_orders?: boolean | null
           is_active?: boolean | null
           latitude?: number | null
           longitude?: number | null
           name?: string | null
+          operating_hours_end?: string | null
+          operating_hours_start?: string | null
           rating?: number | null
           updated_at?: string | null
         }
