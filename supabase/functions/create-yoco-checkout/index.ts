@@ -105,6 +105,12 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Mark order as online payment selected (so UI and downstream logic reflect the choice)
+    await supabase
+      .from('orders')
+      .update({ payment_method: 'online', payment_confirmed: false })
+      .eq('id', orderId);
+
     const restaurant = order.restaurants;
 
     // Fetch payment credentials from secure table (only accessible via service role)
