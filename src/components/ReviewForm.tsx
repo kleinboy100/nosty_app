@@ -12,6 +12,8 @@ interface ReviewFormProps {
   onSuccess?: () => void;
 }
 
+const MAX_COMMENT_LENGTH = 2000;
+
 export function ReviewForm({ restaurantId, orderId, onSuccess }: ReviewFormProps) {
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
@@ -34,6 +36,15 @@ export function ReviewForm({ restaurantId, orderId, onSuccess }: ReviewFormProps
       toast({
         title: "Rating required",
         description: "Please select a star rating.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (comment.length > MAX_COMMENT_LENGTH) {
+      toast({
+        title: "Comment too long",
+        description: `Please keep your review under ${MAX_COMMENT_LENGTH} characters.`,
         variant: "destructive"
       });
       return;
@@ -107,12 +118,18 @@ export function ReviewForm({ restaurantId, orderId, onSuccess }: ReviewFormProps
         </span>
       </div>
 
-      <Textarea
-        placeholder="Share your experience (optional)"
-        value={comment}
-        onChange={(e) => setComment(e.target.value)}
-        rows={3}
-      />
+      <div className="space-y-1">
+        <Textarea
+          placeholder="Share your experience (optional)"
+          value={comment}
+          onChange={(e) => setComment(e.target.value.slice(0, MAX_COMMENT_LENGTH))}
+          rows={3}
+          maxLength={MAX_COMMENT_LENGTH}
+        />
+        <p className="text-xs text-muted-foreground text-right">
+          {comment.length}/{MAX_COMMENT_LENGTH}
+        </p>
+      </div>
 
       <Button onClick={handleSubmit} disabled={loading || rating === 0}>
         {loading ? 'Submitting...' : 'Submit Review'}

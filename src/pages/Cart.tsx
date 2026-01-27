@@ -12,6 +12,9 @@ import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { OrderTypeSelector } from '@/components/OrderTypeSelector';
 import { supabase } from '@/integrations/supabase/client';
 
+const MAX_NOTES_LENGTH = 1000;
+const MAX_ADDRESS_LENGTH = 500;
+
 export default function Cart() {
   const { items, updateQuantity, removeItem, clearCart, total, restaurantId } = useCart();
   const { user } = useAuth();
@@ -56,6 +59,24 @@ export default function Cart() {
       toast({
         title: "Delivery address required",
         description: "Please enter your delivery address.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (orderType === 'delivery' && deliveryAddress.length > MAX_ADDRESS_LENGTH) {
+      toast({
+        title: "Address too long",
+        description: `Please keep your address under ${MAX_ADDRESS_LENGTH} characters.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (notes.length > MAX_NOTES_LENGTH) {
+      toast({
+        title: "Notes too long",
+        description: `Please keep your notes under ${MAX_NOTES_LENGTH} characters.`,
         variant: "destructive"
       });
       return;
@@ -259,9 +280,13 @@ export default function Cart() {
                     id="notes"
                     placeholder="Any special instructions?"
                     value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
+                    onChange={(e) => setNotes(e.target.value.slice(0, MAX_NOTES_LENGTH))}
                     rows={3}
+                    maxLength={MAX_NOTES_LENGTH}
                   />
+                  <p className="text-xs text-muted-foreground text-right">
+                    {notes.length}/{MAX_NOTES_LENGTH}
+                  </p>
                 </div>
 
                 {/* Info about payment */}

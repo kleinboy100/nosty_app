@@ -36,11 +36,32 @@ export function YocoSettings({ restaurantId }: YocoSettingsProps) {
     }
   };
 
+  const YOCO_SECRET_KEY_PATTERN = /^sk_(live|test)_[a-zA-Z0-9]{20,}$/;
+  const YOCO_PUBLIC_KEY_PATTERN = /^pk_(live|test)_[a-zA-Z0-9]{20,}$/;
+
   const handleSave = async () => {
     if (!secretKey.trim()) {
       toast({
         title: "Secret key required",
         description: "Please enter your Yoco secret key.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!YOCO_SECRET_KEY_PATTERN.test(secretKey)) {
+      toast({
+        title: "Invalid secret key format",
+        description: "Secret key should start with 'sk_live_' or 'sk_test_' followed by alphanumeric characters.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (publicKey && !YOCO_PUBLIC_KEY_PATTERN.test(publicKey)) {
+      toast({
+        title: "Invalid public key format",
+        description: "Public key should start with 'pk_live_' or 'pk_test_' followed by alphanumeric characters.",
         variant: "destructive"
       });
       return;
