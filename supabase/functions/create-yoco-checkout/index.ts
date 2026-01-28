@@ -54,20 +54,23 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create auth client to verify user
+    // Create auth client to verify user using getClaims (more reliable than getUser)
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
     
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: authError } = await supabaseAuth.auth.getClaims(token);
     
-    if (authError || !user) {
+    if (authError || !claimsData?.claims?.sub) {
       console.error('Auth error:', authError);
       return new Response(
         JSON.stringify({ error: 'Invalid authentication' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
+    const userId = claimsData.claims.sub as string;
     
     // Create service role client for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -97,7 +100,7 @@ Deno.serve(async (req) => {
     }
 
     // AUTHORIZATION: Verify the authenticated user owns this order
-    if (order.user_id !== user.id) {
+    if (order.user_id !== userId) {
       console.error('Authorization failed: User does not own this order');
       return new Response(
         JSON.stringify({ error: 'Unauthorized - you can only pay for your own orders' }),

@@ -1,6 +1,9 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+
+// Auto-logout after 30 minutes of inactivity
+const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
 
 interface AuthContextType {
   user: User | null;
@@ -17,6 +20,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const resetInactivityTimer = useCallback(() => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+    
+    // Only set timer if user is logged in
+    if (user) {
+      inactivityTimerRef.current = setTimeout(async () => {
+        console.log('Auto-logout due to inactivity');
+        await supabase.auth.signOut();
+      }, INACTIVITY_TIMEOUT_MS);
+    }
+  }, [user]);
+
+  // Set up activity listeners for inactivity timeout
+  useEffect(() => {
+    if (!user) {
+      // Clear timer when logged out
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+        inactivityTimerRef.current = null;
+      }
+      return;
+    }
+
+    const activityEvents = ['mousedown', 'keydown', 'touchstart', 'scroll'];
+    
+    const handleActivity = () => {
+      resetInactivityTimer();
+    };
+
+    // Start initial timer
+    resetInactivityTimer();
+
+    // Add listeners
+    activityEvents.forEach(event => {
+      window.addEventListener(event, handleActivity, { passive: true });
+    });
+
+    return () => {
+      activityEvents.forEach(event => {
+        window.removeEventListener(event, handleActivity);
+      });
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+    };
+  }, [user, resetInactivityTimer]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
