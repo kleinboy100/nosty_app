@@ -62,7 +62,7 @@ export function KFCMenuItem({
   const defaultImage = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400';
 
   return (
-    <div className="group relative bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5">
+    <div className="group relative bg-card rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5">
       {/* Image Container */}
       <div className="relative aspect-square overflow-hidden bg-muted">
         <img
@@ -75,7 +75,7 @@ export function KFCMenuItem({
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
         {/* Price Badge */}
-        <div className="absolute top-1.5 right-1.5 bg-primary text-primary-foreground px-2 py-0.5 rounded-full font-bold text-[10px] shadow-lg backdrop-blur-sm">
+        <div className="absolute top-2 right-2 bg-primary text-primary-foreground px-2.5 py-1 rounded-full font-bold text-xs shadow-lg backdrop-blur-sm">
           R{price.toFixed(0)}
         </div>
         
@@ -85,27 +85,27 @@ export function KFCMenuItem({
           size="icon"
           disabled={isAdding}
           className={cn(
-            "absolute bottom-1.5 right-1.5 h-7 w-7 rounded-full shadow-lg transition-all duration-300",
+            "absolute bottom-2 right-2 h-9 w-9 rounded-full shadow-lg transition-all duration-300",
             isAdding 
               ? "bg-success hover:bg-success scale-110" 
               : "bg-primary hover:bg-primary/90 group-hover:scale-110"
           )}
         >
           {isAdding ? (
-            <Check size={14} className="text-success-foreground animate-scale-in" />
+            <Check size={18} className="text-success-foreground animate-scale-in" />
           ) : (
-            <Plus size={14} className="text-primary-foreground" />
+            <Plus size={18} className="text-primary-foreground" />
           )}
         </Button>
       </div>
       
       {/* Content */}
-      <div className="p-2">
-        <h4 className="font-display font-bold text-foreground text-xs leading-tight line-clamp-1 group-hover:text-primary transition-colors duration-200">
+      <div className="p-3">
+        <h4 className="font-display font-bold text-foreground text-sm leading-tight line-clamp-1 group-hover:text-primary transition-colors duration-200">
           {name}
         </h4>
         {description && (
-          <p className="text-muted-foreground text-[10px] line-clamp-1 mt-0.5 leading-relaxed">
+          <p className="text-muted-foreground text-xs line-clamp-1 mt-1 leading-relaxed">
             {description}
           </p>
         )}

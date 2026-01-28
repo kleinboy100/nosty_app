@@ -147,17 +147,17 @@ export default function Index() {
           </h2>
           
           {loading ? (
-            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5">
-              {[...Array(12)].map((_, i) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {[...Array(8)].map((_, i) => (
                 <div 
                   key={i} 
-                  className="bg-card rounded-xl overflow-hidden shadow-sm animate-fade-in"
+                  className="bg-card rounded-2xl overflow-hidden shadow-sm animate-fade-in"
                   style={{ animationDelay: `${i * 0.05}s` }}
                 >
                   <div className="aspect-square skeleton" />
-                  <div className="p-2 space-y-1.5">
-                    <div className="h-3 skeleton rounded-lg w-3/4" />
-                    <div className="h-2.5 skeleton rounded-lg w-1/2" />
+                  <div className="p-3 space-y-2">
+                    <div className="h-4 skeleton rounded-lg w-3/4" />
+                    <div className="h-3 skeleton rounded-lg w-1/2" />
                   </div>
                 </div>
               ))}
@@ -171,7 +171,7 @@ export default function Index() {
               <p className="text-muted-foreground text-sm mt-1">Try adjusting your search or category</p>
             </div>
           ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {filteredItems.map((item, index) => (
                 <div 
                   key={item.id}
