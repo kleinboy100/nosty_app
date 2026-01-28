@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { EmailAuth } from '@/components/auth/EmailAuth';
@@ -19,17 +19,14 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 px-4 animate-fade-in">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 px-4">
       <div className="w-full max-w-md">
-        <div className="bg-card rounded-2xl border border-border/50 p-8 shadow-xl">
+        <div className="card-elevated p-8">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <span className="text-3xl">🍔</span>
-            </div>
-            <h1 className="font-display text-2xl font-bold text-foreground mb-2">
-              Welcome Back
+            <h1 className="font-display text-3xl font-bold text-foreground mb-2">
+              Welcome
             </h1>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground">
               Sign in to continue ordering delicious food
             </p>
           </div>
@@ -38,10 +35,10 @@ export default function Auth() {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border/50" />
+              <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-3 text-muted-foreground font-medium">Or continue with</span>
+              <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
             </div>
           </div>
 

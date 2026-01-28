@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trash2, Minus, Plus, ShoppingBag, ArrowLeft, Bell, Loader2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,6 @@ import { useRestaurantOperatingStatus } from '@/hooks/useRestaurantOperatingStat
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { OrderTypeSelector } from '@/components/OrderTypeSelector';
 import { supabase } from '@/integrations/supabase/client';
-import { cn } from '@/lib/utils';
 
 const MAX_NOTES_LENGTH = 1000;
 const MAX_ADDRESS_LENGTH = 500;
@@ -106,11 +105,12 @@ export default function Cart() {
     setLoading(true);
 
     try {
+      // Create order with pending status - payment method will be selected after restaurant approval
       const { data: orderId, error: orderError } = await supabase.rpc('create_validated_order', {
         p_restaurant_id: restaurantId,
         p_delivery_address: orderType === 'delivery' ? deliveryAddress : 'Collection at store',
         p_notes: notes || null,
-        p_payment_method: 'cash',
+        p_payment_method: 'cash', // Default to cash, will be updated after approval
         p_items: items.map(item => ({
           menu_item_id: item.menuItemId,
           quantity: item.quantity
@@ -159,16 +159,14 @@ export default function Cart() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center animate-fade-in">
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-muted flex items-center justify-center">
-            <ShoppingBag size={48} className="text-muted-foreground" />
-          </div>
+          <ShoppingBag size={64} className="mx-auto text-muted-foreground mb-4" />
           <h1 className="font-display text-2xl font-bold text-foreground mb-2">Your cart is empty</h1>
-          <p className="text-muted-foreground mb-8">Add some delicious items to get started</p>
-          <Button onClick={() => navigate('/')} className="btn-primary rounded-xl px-6">
+          <p className="text-muted-foreground mb-6">Add some delicious items to get started</p>
+          <Button onClick={() => navigate('/')} className="btn-primary">
             <ArrowLeft size={18} className="mr-2" />
-            Browse Menu
+            Browse Restaurants
           </Button>
         </div>
       </div>
@@ -176,60 +174,56 @@ export default function Cart() {
   }
 
   return (
-    <div className="min-h-screen py-6 md:py-8 pb-24 md:pb-8">
+    <div className="min-h-screen py-8">
       <div className="container mx-auto px-4">
         <Button
           variant="ghost"
-          className="mb-6 rounded-xl"
+          className="mb-6"
           onClick={() => navigate(-1)}
         >
           <ArrowLeft size={20} className="mr-2" />
           Continue Shopping
         </Button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Cart Items */}
-          <div className="lg:col-span-2 animate-fade-in">
-            <h1 className="font-display text-2xl font-bold text-foreground mb-2">Your Cart</h1>
-            <p className="text-muted-foreground mb-6">From: {items[0]?.restaurantName}</p>
+          <div className="lg:col-span-2">
+            <h1 className="font-display text-2xl font-bold text-foreground mb-6">Your Cart</h1>
+            <p className="text-muted-foreground mb-4">From: {items[0]?.restaurantName}</p>
             
-            <div className="space-y-3">
-              {items.map((item, index) => (
-                <div 
-                  key={item.id} 
-                  className="bg-card rounded-2xl border border-border/50 p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-all duration-200 animate-fade-in"
-                  style={{ animationDelay: `${index * 0.05}s` }}
-                >
+            <div className="space-y-4">
+              {items.map(item => (
+                <div key={item.id} className="card-elevated p-4 flex items-center gap-4">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-display font-semibold text-foreground">{item.name}</h3>
-                    <p className="text-primary font-bold text-sm">R{item.price.toFixed(2)} each</p>
+                    <h3 className="font-medium text-foreground">{item.name}</h3>
+                    <p className="text-primary font-semibold">R{item.price.toFixed(2)} each</p>
                   </div>
-                  <div className="flex items-center gap-1 bg-muted rounded-xl p-1">
+                  <div className="flex items-center gap-2">
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="icon"
-                      className="h-8 w-8 rounded-lg hover:bg-background"
+                      className="h-8 w-8"
                       onClick={() => updateQuantity(item.id, item.quantity - 1)}
                     >
                       <Minus size={14} />
                     </Button>
-                    <span className="w-8 text-center font-bold text-sm">{item.quantity}</span>
+                    <span className="w-8 text-center font-medium">{item.quantity}</span>
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="icon"
-                      className="h-8 w-8 rounded-lg hover:bg-background"
+                      className="h-8 w-8"
                       onClick={() => updateQuantity(item.id, item.quantity + 1)}
                     >
                       <Plus size={14} />
                     </Button>
                   </div>
-                  <p className="font-bold text-foreground w-20 text-right">
+                  <p className="font-semibold text-foreground w-20 text-right">
                     R{(item.price * item.quantity).toFixed(2)}
                   </p>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-colors"
+                    className="text-destructive hover:text-destructive"
                     onClick={() => removeItem(item.id)}
                   >
                     <Trash2 size={18} />
@@ -240,22 +234,20 @@ export default function Cart() {
           </div>
 
           {/* Order Summary */}
-          <div className="lg:col-span-1 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-            <div className="bg-card rounded-2xl border border-border/50 p-6 shadow-lg sticky top-24">
+          <div className="lg:col-span-1">
+            <div className="card-elevated p-6 sticky top-24">
               <h2 className="font-display text-xl font-bold text-foreground mb-6">Order Summary</h2>
               
               {/* Notification Permission */}
               {supported && permission !== 'granted' && (
-                <div className="bg-primary/5 rounded-xl p-4 mb-4 border border-primary/10">
+                <div className="bg-muted/50 rounded-lg p-4 mb-4">
                   <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <Bell className="text-primary" size={18} />
-                    </div>
+                    <Bell className="text-primary mt-0.5" size={20} />
                     <div className="flex-1">
-                      <p className="text-sm font-semibold">Enable notifications</p>
-                      <p className="text-xs text-muted-foreground mb-3">Get updates about your order</p>
-                      <Button size="sm" variant="outline" onClick={handleEnableNotifications} className="rounded-lg">
-                        Enable
+                      <p className="text-sm font-medium">Enable order notifications</p>
+                      <p className="text-xs text-muted-foreground mb-2">Get updates when your order status changes</p>
+                      <Button size="sm" variant="outline" onClick={handleEnableNotifications}>
+                        Enable Notifications
                       </Button>
                     </div>
                   </div>
@@ -265,14 +257,14 @@ export default function Cart() {
               <div className="space-y-4 mb-6">
                 {/* Order Type Selector */}
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Order Type *</Label>
+                  <Label>Order Type *</Label>
                   <OrderTypeSelector value={orderType} onChange={setOrderType} />
                 </div>
 
-                {/* Delivery Address */}
+                {/* Delivery Address - only show for delivery orders */}
                 {orderType === 'delivery' && (
                   <div className="space-y-2">
-                    <Label className="text-sm font-semibold">Delivery Address *</Label>
+                    <Label>Delivery Address *</Label>
                     <AddressAutocomplete
                       value={deliveryAddress}
                       onChange={setDeliveryAddress}
@@ -285,16 +277,16 @@ export default function Cart() {
 
                 {/* Collection info */}
                 {orderType === 'collection' && (
-                  <div className="bg-muted/50 rounded-xl p-4">
-                    <p className="text-sm font-semibold mb-1">📍 Pickup Location</p>
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <p className="text-sm font-medium mb-1">📍 Pickup Location</p>
                     <p className="text-sm text-muted-foreground">
-                      {items[0]?.restaurantName} - Ready for collection!
+                      {items[0]?.restaurantName} - We'll have your order ready for collection!
                     </p>
                   </div>
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="notes" className="text-sm font-semibold">Order Notes (optional)</Label>
+                  <Label htmlFor="notes">Order Notes (optional)</Label>
                   <Textarea
                     id="notes"
                     placeholder="Any special instructions?"
@@ -302,47 +294,44 @@ export default function Cart() {
                     onChange={(e) => setNotes(e.target.value.slice(0, MAX_NOTES_LENGTH))}
                     rows={3}
                     maxLength={MAX_NOTES_LENGTH}
-                    className="rounded-xl resize-none"
                   />
                   <p className="text-xs text-muted-foreground text-right">
                     {notes.length}/{MAX_NOTES_LENGTH}
                   </p>
                 </div>
 
-                {/* Payment info */}
-                <div className="bg-muted/50 rounded-xl p-4">
+                {/* Info about payment */}
+                <div className="bg-muted/50 rounded-lg p-4">
                   <p className="text-sm text-muted-foreground">
-                    💡 Choose payment after restaurant confirms your order.
+                    💡 You'll choose your payment method after the restaurant confirms your order.
                   </p>
                 </div>
               </div>
 
-              <div className="border-t border-border/50 pt-4 space-y-2 mb-6">
-                <div className="flex justify-between text-sm text-muted-foreground">
+              <div className="border-t border-border pt-4 space-y-2 mb-6">
+                <div className="flex justify-between text-muted-foreground">
                   <span>Subtotal</span>
                   <span>R{total.toFixed(2)}</span>
                 </div>
                 {orderType === 'delivery' && (
-                  <div className="flex justify-between text-sm text-muted-foreground">
+                  <div className="flex justify-between text-muted-foreground">
                     <span>Delivery Fee</span>
                     <span>R25.00</span>
                   </div>
                 )}
-                <div className="flex justify-between font-bold text-foreground text-lg pt-3 border-t border-border/50">
+                <div className="flex justify-between font-semibold text-foreground text-lg pt-2 border-t border-border">
                   <span>Total</span>
-                  <span className="text-primary">R{(orderType === 'delivery' ? total + 25 : total).toFixed(2)}</span>
+                  <span>R{(orderType === 'delivery' ? total + 25 : total).toFixed(2)}</span>
                 </div>
               </div>
 
               {/* Restaurant Closed Warning */}
               {!statusLoading && !isOpen && (
-                <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 mb-4">
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-4">
                   <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-destructive/10">
-                      <Clock className="text-destructive" size={18} />
-                    </div>
+                    <Clock className="text-destructive mt-0.5 shrink-0" size={20} />
                     <div>
-                      <p className="text-sm font-semibold text-destructive">Restaurant Closed</p>
+                      <p className="text-sm font-medium text-destructive">Restaurant Closed</p>
                       <p className="text-xs text-destructive/80 mt-1">{reason}</p>
                       {openingTime && closingTime && (
                         <p className="text-xs text-muted-foreground mt-1">
@@ -355,13 +344,13 @@ export default function Cart() {
               )}
 
               <Button 
-                className="w-full btn-primary h-12 rounded-xl text-base font-semibold"
+                className="w-full btn-primary h-12"
                 onClick={handlePlaceOrder}
                 disabled={loading || statusLoading || !isOpen}
               >
                 {loading ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
                     Submitting Order...
                   </>
                 ) : !isOpen ? (

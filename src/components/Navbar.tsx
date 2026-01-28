@@ -1,16 +1,14 @@
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, User, LogOut, Store, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { useIsRestaurantOwner } from '@/hooks/useIsRestaurantOwner';
-import { cn } from '@/lib/utils';
 
 export function Navbar() {
   const { user, signOut } = useAuth();
   const { itemCount } = useCart();
   const navigate = useNavigate();
-  const location = useLocation();
   const { isOwner } = useIsRestaurantOwner();
 
   const handleSignOut = async () => {
@@ -18,28 +16,21 @@ export function Navbar() {
     navigate('/');
   };
 
-  const isActive = (path: string) => location.pathname === path;
-
   return (
-    <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-lg border-b border-border/50 shadow-sm">
+    <nav className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center gap-2 group">
-            <span className="font-display text-lg md:text-xl font-black text-brand-foreground bg-brand px-3 py-1.5 rounded-xl shadow-md transition-transform duration-200 group-hover:scale-105">
+          <Link to="/" className="flex items-center gap-2">
+            <span className="font-display text-xl md:text-2xl font-black text-brand-foreground bg-brand px-3 py-1 rounded-lg">
               Nosty'$ Fresh Fast Food
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-6">
             <Link 
               to="/" 
-              className={cn(
-                "px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200",
-                isActive('/') 
-                  ? "bg-primary/10 text-primary" 
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              )}
+              className="text-muted-foreground hover:text-foreground transition-colors font-medium"
             >
               Menu
             </Link>
@@ -47,27 +38,18 @@ export function Navbar() {
               <>
                 <Link 
                   to="/orders" 
-                  className={cn(
-                    "px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-1.5",
-                    isActive('/orders') 
-                      ? "bg-primary/10 text-primary" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                  )}
+                  className="text-muted-foreground hover:text-foreground transition-colors font-medium flex items-center gap-1"
                 >
-                  <ClipboardList size={16} />
+                  <ClipboardList size={18} />
                   My Orders
                 </Link>
+                {/* Only show Dashboard to restaurant owners */}
                 {isOwner && (
                   <Link 
                     to="/restaurant/dashboard" 
-                    className={cn(
-                      "px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-1.5",
-                      isActive('/restaurant/dashboard') 
-                        ? "bg-primary/10 text-primary" 
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                    )}
+                    className="text-muted-foreground hover:text-foreground transition-colors font-medium flex items-center gap-1"
                   >
-                    <Store size={16} />
+                    <Store size={18} />
                     Dashboard
                   </Link>
                 )}
@@ -76,12 +58,12 @@ export function Navbar() {
           </div>
 
           {/* Desktop Actions */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-4">
             <Link to="/cart" className="relative">
-              <Button variant="ghost" size="icon" className="rounded-xl hover:bg-muted/50">
+              <Button variant="ghost" size="icon">
                 <ShoppingCart size={20} />
                 {itemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-md animate-scale-in">
+                  <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
                     {itemCount}
                   </span>
                 )}
@@ -89,19 +71,19 @@ export function Navbar() {
             </Link>
 
             {user ? (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
                 <Link to="/profile">
-                  <Button variant="ghost" size="icon" className="rounded-xl hover:bg-muted/50">
+                  <Button variant="ghost" size="icon">
                     <User size={20} />
                   </Button>
                 </Link>
-                <Button variant="ghost" size="icon" onClick={handleSignOut} className="rounded-xl hover:bg-muted/50">
+                <Button variant="ghost" size="icon" onClick={handleSignOut}>
                   <LogOut size={20} />
                 </Button>
               </div>
             ) : (
               <Link to="/auth">
-                <Button className="btn-primary rounded-xl px-5">Sign In</Button>
+                <Button className="btn-primary">Sign In</Button>
               </Link>
             )}
           </div>
@@ -109,7 +91,7 @@ export function Navbar() {
           {/* Mobile: Only show logout button if logged in */}
           <div className="md:hidden">
             {user && (
-              <Button variant="ghost" size="icon" onClick={handleSignOut} className="rounded-xl">
+              <Button variant="ghost" size="icon" onClick={handleSignOut}>
                 <LogOut size={20} />
               </Button>
             )}
