@@ -557,6 +557,10 @@ export type Database = {
             }
             Returns: string
           }
+      is_restaurant_owner: {
+        Args: { p_restaurant_id: string }
+        Returns: boolean
+      }
       owner_has_payment_keys: {
         Args: { p_restaurant_id: string }
         Returns: boolean
