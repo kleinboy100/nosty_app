@@ -41,7 +41,7 @@ export function BottomNav() {
       {/* More Menu Panel */}
       <div 
         className={cn(
-          "fixed bottom-[72px] left-4 right-4 z-50 bg-card/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl transition-all duration-300 md:hidden",
+          "fixed bottom-[56px] left-4 right-4 z-50 bg-card/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl transition-all duration-300 md:hidden",
           moreOpen 
             ? "opacity-100 translate-y-0" 
             : "opacity-0 translate-y-4 pointer-events-none"
@@ -83,34 +83,34 @@ export function BottomNav() {
 
       {/* Bottom Navigation Bar */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/90 backdrop-blur-xl border-t border-border/50 md:hidden safe-area-inset-bottom">
-        <div className="flex items-center justify-around h-16 px-2">
+        <div className="flex items-center justify-around h-[52px] px-2">
           {visibleItems.map((item) => (
             <Link
               key={item.to}
               to={item.to}
               className={cn(
-                "flex flex-col items-center justify-center flex-1 py-2 relative transition-all duration-200",
+                "flex flex-col items-center justify-center flex-1 py-1 relative transition-all duration-200",
                 isActive(item.to) 
                   ? "text-primary" 
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
               <div className={cn(
-                "relative p-1.5 rounded-xl transition-all duration-200",
+                "relative p-1 rounded-lg transition-all duration-200",
                 isActive(item.to) && "bg-primary/10"
               )}>
-                <item.icon size={20} className={cn(
+                <item.icon size={16} className={cn(
                   "transition-transform duration-200",
                   isActive(item.to) && "scale-110"
                 )} />
                 {item.badge && item.badge > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-bold shadow-md">
+                  <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[9px] rounded-full h-3.5 w-3.5 flex items-center justify-center font-bold shadow-md">
                     {item.badge}
                   </span>
                 )}
               </div>
               <span className={cn(
-                "text-[10px] mt-1 font-medium transition-all duration-200",
+                "text-[9px] mt-0.5 font-medium transition-all duration-200",
                 isActive(item.to) && "font-semibold"
               )}>{item.label}</span>
             </Link>
@@ -120,22 +120,22 @@ export function BottomNav() {
           <button
             onClick={() => setMoreOpen(!moreOpen)}
             className={cn(
-              "flex flex-col items-center justify-center flex-1 py-2 relative transition-all duration-200",
+              "flex flex-col items-center justify-center flex-1 py-1 relative transition-all duration-200",
               moreOpen
                 ? "text-primary" 
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
             <div className={cn(
-              "p-1.5 rounded-xl transition-all duration-200",
+              "p-1 rounded-lg transition-all duration-200",
               moreOpen && "bg-primary/10"
             )}>
-              <MoreHorizontal size={20} className={cn(
+              <MoreHorizontal size={16} className={cn(
                 "transition-transform duration-200",
                 moreOpen && "rotate-90"
               )} />
             </div>
-            <span className="text-[10px] mt-1 font-medium">More</span>
+            <span className="text-[9px] mt-0.5 font-medium">More</span>
           </button>
         </div>
       </nav>
