@@ -70,7 +70,7 @@ export default function Index() {
   const availableCategories = ['All', ...new Set(menuItems.map(item => item.category))];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-muted">
       {/* Operating Status Banner */}
       {!statusLoading && (
         <div className={cn(
@@ -97,13 +97,6 @@ export default function Index() {
           restaurantId={restaurant?.id || NOSTY_RESTAURANT_ID}
           restaurantName={restaurant?.name || "Nosty's Fresh Fast Food"}
         />
-        <div className="relative container mx-auto px-4 h-full flex flex-col z-10 pointer-events-none">
-          <div className="max-w-xl mt-4">
-            <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-bold text-card mb-2 animate-fade-in drop-shadow-lg">
-              Fresh & Fast
-            </h1>
-          </div>
-        </div>
       </section>
 
       {/* Category Filters - Sticky */}
