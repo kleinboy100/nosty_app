@@ -159,24 +159,26 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen py-8 pb-24 md:pb-8">
+    <div className="min-h-screen py-6 md:py-8 pb-24 md:pb-8 animate-fade-in">
       <div className="container mx-auto px-4 max-w-2xl">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="font-display text-2xl md:text-3xl font-bold">My Profile</h1>
-            <p className="text-muted-foreground text-sm">Manage your account information</p>
+            <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">My Profile</h1>
+            <p className="text-muted-foreground text-sm mt-1">Manage your account information</p>
           </div>
-          <Button variant="outline" onClick={handleSignOut} className="gap-2">
+          <Button variant="outline" onClick={handleSignOut} className="gap-2 rounded-xl">
             <LogOut size={18} />
             <span className="hidden sm:inline">Sign Out</span>
           </Button>
         </div>
 
         {/* Account Information */}
-        <Card className="mb-6">
-          <CardHeader>
+        <Card className="mb-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+          <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <User size={20} />
+              <div className="p-2 rounded-lg bg-primary/10">
+                <User size={18} className="text-primary" />
+              </div>
               Account Information
             </CardTitle>
             <CardDescription>Your basic account details</CardDescription>
@@ -242,7 +244,7 @@ export default function Profile() {
             <Button 
               onClick={handleSaveProfile} 
               disabled={saving}
-              className="w-full sm:w-auto btn-primary mt-2"
+              className="w-full sm:w-auto btn-primary mt-4 rounded-xl"
             >
               {saving ? (
                 <>
@@ -262,12 +264,14 @@ export default function Profile() {
         {/* Restaurant Owner Section */}
         {isRestaurantOwner && restaurants.length > 0 && (
           <>
-            <Separator className="my-6" />
+            <Separator className="my-8" />
             
-            <Card>
-              <CardHeader>
+            <Card className="shadow-sm hover:shadow-md transition-shadow duration-200">
+              <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <Store size={20} />
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Store size={18} className="text-primary" />
+                  </div>
                   My Restaurants
                 </CardTitle>
                 <CardDescription>Restaurants registered under your account</CardDescription>
@@ -276,15 +280,15 @@ export default function Profile() {
                 {restaurants.map((restaurant) => (
                   <div 
                     key={restaurant.id} 
-                    className="p-4 rounded-lg border bg-muted/30 space-y-3"
+                    className="p-5 rounded-2xl border border-border/50 bg-muted/30 space-y-3 hover:bg-muted/50 transition-colors duration-200"
                   >
                     <div>
-                      <h3 className="font-semibold text-base">{restaurant.name}</h3>
+                      <h3 className="font-display font-bold text-base">{restaurant.name}</h3>
                       <p className="text-sm text-muted-foreground">{restaurant.cuisine_type}</p>
                     </div>
                     
                     {restaurant.description && (
-                      <p className="text-sm">{restaurant.description}</p>
+                      <p className="text-sm text-foreground/80">{restaurant.description}</p>
                     )}
                     
                     <div className="flex flex-col sm:flex-row gap-2 text-sm text-muted-foreground">
@@ -304,7 +308,7 @@ export default function Profile() {
                       variant="outline" 
                       size="sm"
                       onClick={() => navigate('/restaurant/dashboard')}
-                      className="mt-2"
+                      className="mt-3 rounded-xl"
                     >
                       Go to Dashboard
                     </Button>
