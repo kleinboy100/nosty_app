@@ -109,9 +109,16 @@ export function Navbar() {
           {/* Mobile: Only show logout button if logged in */}
           <div className="md:hidden">
             {user && (
-              <Button variant="ghost" size="icon" onClick={handleSignOut} className="rounded-xl">
-                <LogOut size={20} />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Link to="/profile">
+                  <Button variant="ghost" size="icon" className="rounded-xl">
+                    <User size={20} />
+                  </Button>
+                </Link>
+                <Button variant="ghost" size="icon" onClick={handleSignOut} className="rounded-xl">
+                  <LogOut size={20} />
+                </Button>
+              </div>
             )}
           </div>
         </div>
