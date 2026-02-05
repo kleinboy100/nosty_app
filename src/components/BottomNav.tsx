@@ -13,11 +13,16 @@ export function BottomNav() {
   const [moreOpen, setMoreOpen] = useState(false);
   const { isOwner } = useIsRestaurantOwner();
 
+  // Hide bottom nav entirely for restaurant owners
+  if (isOwner) {
+    return null;
+  }
+
   const isActive = (path: string) => location.pathname === path;
 
   const navItems = [
     { to: '/', icon: Home, label: 'Home', show: true },
-    { to: '/orders', icon: ClipboardList, label: 'Orders', show: !!user && !isOwner },
+    { to: '/orders', icon: ClipboardList, label: 'Orders', show: !!user },
     { to: '/cart', icon: ShoppingCart, label: 'Cart', show: true, badge: itemCount },
   ];
 
