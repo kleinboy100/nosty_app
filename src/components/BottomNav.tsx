@@ -17,9 +17,8 @@ export function BottomNav() {
 
   const navItems = [
     { to: '/', icon: Home, label: 'Home', show: true },
-    { to: '/orders', icon: ClipboardList, label: 'Orders', show: !!user },
+    { to: '/orders', icon: ClipboardList, label: 'Orders', show: !!user && !isOwner },
     { to: '/cart', icon: ShoppingCart, label: 'Cart', show: true, badge: itemCount },
-    { to: '/restaurant/dashboard', icon: Store, label: 'Dashboard', show: !!user && isOwner },
   ];
 
   const visibleItems = navItems.filter(item => item.show);
