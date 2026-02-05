@@ -230,13 +230,13 @@ export default function Profile() {
             <div>
               <Label htmlFor="address" className="flex items-center gap-2">
                 <MapPin size={14} />
-                Delivery Address
+                 {isRestaurantOwner ? 'Restaurant Address' : 'Delivery Address'}
               </Label>
               <Input
                 id="address"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="Enter your address"
+                 placeholder={isRestaurantOwner ? 'Enter restaurant address' : 'Enter your delivery address'}
                 className="mt-1.5"
               />
             </div>
