@@ -1,0 +1,394 @@
+ import { useState, useEffect } from 'react';
+ import { useNavigate, Link } from 'react-router-dom';
+ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+ import { Button } from '@/components/ui/button';
+ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
+ import { BarChart, Bar, XAxis, YAxis, LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+ import { useAuth } from '@/contexts/AuthContext';
+ import { useIsRestaurantOwner } from '@/hooks/useIsRestaurantOwner';
+ import { supabase } from '@/integrations/supabase/client';
+ import { ArrowLeft, TrendingUp, ShoppingBag, DollarSign, Clock, Loader2 } from 'lucide-react';
+ import { format, subDays, startOfDay, endOfDay } from 'date-fns';
+ 
+ interface OrderStats {
+   totalOrders: number;
+   totalRevenue: number;
+   averageOrderValue: number;
+   pendingOrders: number;
+   completedOrders: number;
+   cancelledOrders: number;
+ }
+ 
+ interface DailyData {
+   date: string;
+   orders: number;
+   revenue: number;
+ }
+ 
+ interface StatusData {
+   status: string;
+   count: number;
+   fill: string;
+ }
+ 
+ const chartConfig: ChartConfig = {
+   orders: { label: 'Orders', color: 'hsl(var(--primary))' },
+   revenue: { label: 'Revenue', color: 'hsl(var(--chart-2))' },
+   pending: { label: 'Pending', color: 'hsl(45, 93%, 47%)' },
+   confirmed: { label: 'Confirmed', color: 'hsl(200, 98%, 39%)' },
+   preparing: { label: 'Preparing', color: 'hsl(262, 83%, 58%)' },
+   ready: { label: 'Ready', color: 'hsl(142, 71%, 45%)' },
+   delivered: { label: 'Delivered', color: 'hsl(142, 76%, 36%)' },
+   cancelled: { label: 'Cancelled', color: 'hsl(0, 84%, 60%)' },
+ };
+ 
+ const STATUS_COLORS: Record<string, string> = {
+   pending: 'hsl(45, 93%, 47%)',
+   confirmed: 'hsl(200, 98%, 39%)',
+   preparing: 'hsl(262, 83%, 58%)',
+   ready: 'hsl(142, 71%, 45%)',
+   out_for_delivery: 'hsl(24, 95%, 53%)',
+   delivered: 'hsl(142, 76%, 36%)',
+   cancelled: 'hsl(0, 84%, 60%)',
+ };
+ 
+ export default function RestaurantAnalytics() {
+   const { user } = useAuth();
+   const { isOwner, loading: ownerLoading } = useIsRestaurantOwner();
+   const navigate = useNavigate();
+   
+   const [restaurants, setRestaurants] = useState<any[]>([]);
+   const [selectedRestaurant, setSelectedRestaurant] = useState<string>('');
+   const [dateRange, setDateRange] = useState<string>('7');
+   const [loading, setLoading] = useState(true);
+   const [stats, setStats] = useState<OrderStats>({
+     totalOrders: 0,
+     totalRevenue: 0,
+     averageOrderValue: 0,
+     pendingOrders: 0,
+     completedOrders: 0,
+     cancelledOrders: 0,
+   });
+   const [dailyData, setDailyData] = useState<DailyData[]>([]);
+   const [statusData, setStatusData] = useState<StatusData[]>([]);
+ 
+   useEffect(() => {
+     if (!ownerLoading && !isOwner) {
+       navigate('/');
+     }
+   }, [isOwner, ownerLoading, navigate]);
+ 
+   useEffect(() => {
+     if (user && isOwner) {
+       fetchRestaurants();
+     }
+   }, [user, isOwner]);
+ 
+   useEffect(() => {
+     if (selectedRestaurant) {
+       fetchAnalytics();
+     }
+   }, [selectedRestaurant, dateRange]);
+ 
+   const fetchRestaurants = async () => {
+     const { data } = await supabase
+       .from('restaurants')
+       .select('id, name')
+       .eq('owner_id', user?.id);
+     setRestaurants(data || []);
+     if (data?.[0]) setSelectedRestaurant(data[0].id);
+   };
+ 
+   const fetchAnalytics = async () => {
+     if (!selectedRestaurant) return;
+     
+     setLoading(true);
+     const days = parseInt(dateRange);
+     const startDate = startOfDay(subDays(new Date(), days - 1));
+     const endDate = endOfDay(new Date());
+ 
+     const { data: orders, error } = await supabase
+       .from('orders')
+       .select('id, total_amount, status, created_at')
+       .eq('restaurant_id', selectedRestaurant)
+       .gte('created_at', startDate.toISOString())
+       .lte('created_at', endDate.toISOString());
+ 
+     if (error) {
+       console.error('Error fetching orders:', error);
+       setLoading(false);
+       return;
+     }
+ 
+     const orderList = orders || [];
+     
+     // Calculate stats
+     const totalRevenue = orderList
+       .filter(o => o.status !== 'cancelled')
+       .reduce((sum, o) => sum + Number(o.total_amount), 0);
+     const completedOrders = orderList.filter(o => o.status === 'delivered').length;
+     const cancelledOrders = orderList.filter(o => o.status === 'cancelled').length;
+     const pendingOrders = orderList.filter(o => 
+       ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery'].includes(o.status)
+     ).length;
+ 
+     setStats({
+       totalOrders: orderList.length,
+       totalRevenue,
+       averageOrderValue: orderList.length > 0 ? totalRevenue / (orderList.length - cancelledOrders || 1) : 0,
+       pendingOrders,
+       completedOrders,
+       cancelledOrders,
+     });
+ 
+     // Group by day
+     const dailyMap = new Map<string, { orders: number; revenue: number }>();
+     for (let i = 0; i < days; i++) {
+       const date = format(subDays(new Date(), days - 1 - i), 'MMM dd');
+       dailyMap.set(date, { orders: 0, revenue: 0 });
+     }
+ 
+     orderList.forEach(order => {
+       const date = format(new Date(order.created_at), 'MMM dd');
+       const existing = dailyMap.get(date);
+       if (existing) {
+         existing.orders += 1;
+         if (order.status !== 'cancelled') {
+           existing.revenue += Number(order.total_amount);
+         }
+       }
+     });
+ 
+     setDailyData(
+       Array.from(dailyMap.entries()).map(([date, data]) => ({
+         date,
+         orders: data.orders,
+         revenue: data.revenue,
+       }))
+     );
+ 
+     // Group by status
+     const statusMap = new Map<string, number>();
+     orderList.forEach(order => {
+       statusMap.set(order.status, (statusMap.get(order.status) || 0) + 1);
+     });
+ 
+     setStatusData(
+       Array.from(statusMap.entries()).map(([status, count]) => ({
+         status: status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' '),
+         count,
+         fill: STATUS_COLORS[status] || 'hsl(var(--muted))',
+       }))
+     );
+ 
+     setLoading(false);
+   };
+ 
+   if (ownerLoading) {
+     return (
+       <div className="min-h-screen flex items-center justify-center">
+         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+       </div>
+     );
+   }
+ 
+   if (!isOwner) {
+     return null;
+   }
+ 
+   return (
+     <div className="min-h-screen py-4 md:py-8">
+       <div className="container mx-auto px-3 md:px-4 max-w-6xl">
+         {/* Header */}
+         <div className="flex flex-wrap items-center gap-3 mb-6">
+           <Link to="/restaurant/dashboard">
+             <Button variant="ghost" size="icon" className="rounded-xl">
+               <ArrowLeft size={20} />
+             </Button>
+           </Link>
+           <h1 className="font-display text-xl md:text-2xl font-bold">Analytics</h1>
+         </div>
+ 
+         {/* Filters */}
+         <div className="flex flex-col sm:flex-row gap-3 mb-6">
+           <Select value={selectedRestaurant} onValueChange={setSelectedRestaurant}>
+             <SelectTrigger className="w-full sm:w-56">
+               <SelectValue placeholder="Select restaurant" />
+             </SelectTrigger>
+             <SelectContent>
+               {restaurants.map(r => (
+                 <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+               ))}
+             </SelectContent>
+           </Select>
+ 
+           <Select value={dateRange} onValueChange={setDateRange}>
+             <SelectTrigger className="w-full sm:w-40">
+               <SelectValue />
+             </SelectTrigger>
+             <SelectContent>
+               <SelectItem value="7">Last 7 days</SelectItem>
+               <SelectItem value="14">Last 14 days</SelectItem>
+               <SelectItem value="30">Last 30 days</SelectItem>
+               <SelectItem value="90">Last 90 days</SelectItem>
+             </SelectContent>
+           </Select>
+         </div>
+ 
+         {loading ? (
+           <div className="flex items-center justify-center py-20">
+             <Loader2 className="h-8 w-8 animate-spin text-primary" />
+           </div>
+         ) : (
+           <>
+             {/* Stats Cards */}
+             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
+               <Card>
+                 <CardContent className="p-4 md:p-6">
+                   <div className="flex items-center gap-3">
+                     <div className="p-2 rounded-lg bg-primary/10">
+                       <ShoppingBag size={20} className="text-primary" />
+                     </div>
+                     <div>
+                       <p className="text-xs md:text-sm text-muted-foreground">Total Orders</p>
+                       <p className="text-xl md:text-2xl font-bold">{stats.totalOrders}</p>
+                     </div>
+                   </div>
+                 </CardContent>
+               </Card>
+ 
+               <Card>
+                 <CardContent className="p-4 md:p-6">
+                   <div className="flex items-center gap-3">
+                     <div className="p-2 rounded-lg bg-green-500/10">
+                       <DollarSign size={20} className="text-green-600" />
+                     </div>
+                     <div>
+                       <p className="text-xs md:text-sm text-muted-foreground">Revenue</p>
+                       <p className="text-xl md:text-2xl font-bold">R{stats.totalRevenue.toFixed(0)}</p>
+                     </div>
+                   </div>
+                 </CardContent>
+               </Card>
+ 
+               <Card>
+                 <CardContent className="p-4 md:p-6">
+                   <div className="flex items-center gap-3">
+                     <div className="p-2 rounded-lg bg-blue-500/10">
+                       <TrendingUp size={20} className="text-blue-600" />
+                     </div>
+                     <div>
+                       <p className="text-xs md:text-sm text-muted-foreground">Avg. Order</p>
+                       <p className="text-xl md:text-2xl font-bold">R{stats.averageOrderValue.toFixed(0)}</p>
+                     </div>
+                   </div>
+                 </CardContent>
+               </Card>
+ 
+               <Card>
+                 <CardContent className="p-4 md:p-6">
+                   <div className="flex items-center gap-3">
+                     <div className="p-2 rounded-lg bg-yellow-500/10">
+                       <Clock size={20} className="text-yellow-600" />
+                     </div>
+                     <div>
+                       <p className="text-xs md:text-sm text-muted-foreground">Pending</p>
+                       <p className="text-xl md:text-2xl font-bold">{stats.pendingOrders}</p>
+                     </div>
+                   </div>
+                 </CardContent>
+               </Card>
+             </div>
+ 
+             {/* Charts */}
+             <div className="grid md:grid-cols-2 gap-4 md:gap-6">
+               {/* Orders Over Time */}
+               <Card>
+                 <CardHeader>
+                   <CardTitle className="text-base md:text-lg">Orders Over Time</CardTitle>
+                   <CardDescription>Daily order count</CardDescription>
+                 </CardHeader>
+                 <CardContent>
+                   <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                     <BarChart data={dailyData}>
+                       <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                       <YAxis tick={{ fontSize: 12 }} />
+                       <ChartTooltip content={<ChartTooltipContent />} />
+                       <Bar dataKey="orders" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                     </BarChart>
+                   </ChartContainer>
+                 </CardContent>
+               </Card>
+ 
+               {/* Revenue Over Time */}
+               <Card>
+                 <CardHeader>
+                   <CardTitle className="text-base md:text-lg">Revenue Over Time</CardTitle>
+                   <CardDescription>Daily revenue (ZAR)</CardDescription>
+                 </CardHeader>
+                 <CardContent>
+                   <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                     <LineChart data={dailyData}>
+                       <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                       <YAxis tick={{ fontSize: 12 }} />
+                       <ChartTooltip content={<ChartTooltipContent />} />
+                       <Line 
+                         type="monotone" 
+                         dataKey="revenue" 
+                         stroke="hsl(var(--chart-2))" 
+                         strokeWidth={2}
+                         dot={{ fill: 'hsl(var(--chart-2))' }}
+                       />
+                     </LineChart>
+                   </ChartContainer>
+                 </CardContent>
+               </Card>
+ 
+               {/* Order Status Distribution */}
+               <Card className="md:col-span-2">
+                 <CardHeader>
+                   <CardTitle className="text-base md:text-lg">Order Status Distribution</CardTitle>
+                   <CardDescription>Breakdown by order status</CardDescription>
+                 </CardHeader>
+                 <CardContent>
+                   <div className="flex flex-col md:flex-row items-center gap-6">
+                     <ChartContainer config={chartConfig} className="h-[250px] w-full md:w-1/2">
+                       <PieChart>
+                         <ChartTooltip content={<ChartTooltipContent />} />
+                         <Pie
+                           data={statusData}
+                           dataKey="count"
+                           nameKey="status"
+                           cx="50%"
+                           cy="50%"
+                           outerRadius={80}
+                           label={({ status, count }) => `${status}: ${count}`}
+                         >
+                           {statusData.map((entry, index) => (
+                             <Cell key={`cell-${index}`} fill={entry.fill} />
+                           ))}
+                         </Pie>
+                       </PieChart>
+                     </ChartContainer>
+                     <div className="flex flex-wrap justify-center gap-3">
+                       {statusData.map((item) => (
+                         <div key={item.status} className="flex items-center gap-2">
+                           <div 
+                             className="w-3 h-3 rounded-full" 
+                             style={{ backgroundColor: item.fill }}
+                           />
+                           <span className="text-sm">{item.status}: {item.count}</span>
+                         </div>
+                       ))}
+                     </div>
+                   </div>
+                 </CardContent>
+               </Card>
+             </div>
+           </>
+         )}
+       </div>
+     </div>
+   );
+ }

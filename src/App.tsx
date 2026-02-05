@@ -17,6 +17,7 @@ import RestaurantRegister from "./pages/RestaurantRegister";
 import RestaurantDashboard from "./pages/RestaurantDashboard";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+ import RestaurantAnalytics from "./pages/RestaurantAnalytics";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
                 <Route path="/orders/:id" element={<OrderDetail />} />
                 <Route path="/restaurant/register" element={<RestaurantRegister />} />
                 <Route path="/restaurant/dashboard" element={<RestaurantDashboard />} />
+                 <Route path="/restaurant/analytics" element={<RestaurantAnalytics />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

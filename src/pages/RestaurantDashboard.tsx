@@ -9,7 +9,7 @@ import { RestaurantOrderCard } from '@/components/RestaurantOrderCard';
 import { YocoSettings } from '@/components/YocoSettings';
 import { MenuManager } from '@/components/MenuManager';
 import { OperatingHoursSettings } from '@/components/OperatingHoursSettings';
-import { Plus, Store, Bell, Volume2, Settings, UtensilsCrossed } from 'lucide-react';
+ import { Plus, Store, Bell, Volume2, Settings, UtensilsCrossed, BarChart3 } from 'lucide-react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 export default function RestaurantDashboard() {
@@ -135,12 +135,20 @@ export default function RestaurantDashboard() {
       <div className="container mx-auto px-3 md:px-4 max-w-full">
         <div className="flex flex-wrap justify-between items-center gap-3 mb-4 md:mb-6">
           <h1 className="font-display text-xl md:text-2xl font-bold">Dashboard</h1>
-          <Link to="/restaurant/register">
-            <Button className="btn-primary text-sm" size="sm">
-              <Plus size={16} className="mr-1" />
-              Add
-            </Button>
-          </Link>
+           <div className="flex items-center gap-2">
+             <Link to="/restaurant/analytics">
+               <Button variant="outline" className="text-sm" size="sm">
+                 <BarChart3 size={16} className="mr-1" />
+                 Analytics
+               </Button>
+             </Link>
+             <Link to="/restaurant/register">
+               <Button className="btn-primary text-sm" size="sm">
+                 <Plus size={16} className="mr-1" />
+                 Add
+               </Button>
+             </Link>
+           </div>
         </div>
 
         {restaurants.length === 0 ? (
