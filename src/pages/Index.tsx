@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { KFCMenuItem } from '@/components/KFCMenuItem';
 import { HeroSlideshow } from '@/components/HeroSlideshow';
 import { supabase } from '@/integrations/supabase/client';
 import { useRestaurantOperatingStatus } from '@/hooks/useRestaurantOperatingStatus';
+import { useIsRestaurantOwner } from '@/hooks/useIsRestaurantOwner';
 import { cn } from '@/lib/utils';
 
 // Nosty's restaurant ID
@@ -27,6 +29,8 @@ interface Restaurant {
 const mealCategories = ['All', 'Mains', 'Sides', 'Drinks', 'Desserts', 'Combos', 'Specials'];
 
 export default function Index() {
+  const navigate = useNavigate();
+  const { isOwner, loading: ownerLoading } = useIsRestaurantOwner();
   const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,6 +38,13 @@ export default function Index() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   
   const { isOpen, loading: statusLoading } = useRestaurantOperatingStatus(NOSTY_RESTAURANT_ID);
+
+  // Redirect restaurant owners to dashboard
+  useEffect(() => {
+    if (!ownerLoading && isOwner) {
+      navigate('/restaurant/dashboard', { replace: true });
+    }
+  }, [isOwner, ownerLoading, navigate]);
 
   useEffect(() => {
     fetchData();
