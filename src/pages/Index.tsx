@@ -99,6 +99,21 @@ export default function Index() {
         />
       </section>
 
+       {/* Search Bar - Below Slideshow */}
+       <section className="py-3 px-4">
+         <div className="container mx-auto">
+           <div className="relative max-w-md mx-auto">
+             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+             <Input
+               placeholder="Search meals..."
+               className="pl-11 h-12 bg-card border-0 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 shadow-sm transition-all duration-200"
+               value={searchQuery}
+               onChange={(e) => setSearchQuery(e.target.value)}
+             />
+           </div>
+         </div>
+       </section>
+
       {/* Category Filters - Sticky */}
       <section className="py-3 border-b border-border/50 sticky top-16 bg-background/95 backdrop-blur-lg z-40 shadow-sm">
         <div className="container mx-auto px-3">
@@ -124,17 +139,6 @@ export default function Index() {
       {/* Menu Items Section */}
       <section className="py-6">
         <div className="container mx-auto px-4">
-          {/* Search Bar */}
-          <div className="relative max-w-md mb-6">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-            <Input
-              placeholder="Search meals..."
-              className="pl-11 h-12 bg-muted/50 border-0 rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all duration-200"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          
           <h2 className="font-display text-xl font-bold text-foreground mb-4 animate-fade-in">
             {selectedCategory === 'All' ? 'Menu' : selectedCategory}
           </h2>
