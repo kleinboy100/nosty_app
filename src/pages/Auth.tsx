@@ -1,71 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { EmailAuth } from '@/components/auth/EmailAuth';
 import { GoogleAuth } from '@/components/auth/GoogleAuth';
-import { supabase } from '@/integrations/supabase/client';
 
 export default function Auth() {
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [checkingRole, setCheckingRole] = useState(false);
 
   useEffect(() => {
-    const checkAndRedirect = async () => {
-      if (!user || checkingRole) return;
-      
-      setCheckingRole(true);
-      
-      try {
-        // Check if user is a restaurant owner
-        const { data, error } = await supabase
-          .from('restaurants')
-          .select('id')
-          .eq('owner_id', user.id)
-          .limit(1);
-
-        if (error) {
-          console.error('Error checking ownership:', error);
-          navigate('/');
-        } else if (data && data.length > 0) {
-          // User is a restaurant owner - redirect to dashboard
-          navigate('/restaurant/dashboard', { replace: true });
-        } else {
-          // User is a customer - redirect to home
-          navigate('/');
-        }
-      } catch (error) {
-        console.error('Error checking ownership:', error);
-        navigate('/');
-      }
-    };
-
-    if (user && !authLoading) {
-      checkAndRedirect();
+    if (user) {
+      navigate('/');
     }
-  }, [user, authLoading, navigate, checkingRole]);
+  }, [user, navigate]);
 
   const handleSuccess = () => {
-    // Navigation will be handled by the useEffect above once user state updates
+    navigate('/');
   };
-
-  // Show loading while checking auth or role
-  if (authLoading || checkingRole) {
-    return (
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  // If user is already logged in, show loading while redirecting
-  if (user) {
-    return (
-      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 px-4 animate-fade-in">
