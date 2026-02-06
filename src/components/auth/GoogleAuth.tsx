@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { supabaseAuth } from '@/lib/supabaseAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export function GoogleAuth() {
@@ -9,7 +9,7 @@ export function GoogleAuth() {
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
-    const { error } = await supabaseAuth.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/`,
