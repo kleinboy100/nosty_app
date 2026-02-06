@@ -1,9 +1,9 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { supabaseAuth } from '@/lib/supabaseAuth';
 
-// Auto-logout after 30 minutes of inactivity
-const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
+// Auto-logout after 5 minutes of inactivity
+const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
 
 interface AuthContextType {
   user: User | null;
@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) {
       inactivityTimerRef.current = setTimeout(async () => {
         console.log('Auto-logout due to inactivity');
-        await supabase.auth.signOut();
+        await supabaseAuth.auth.signOut();
       }, INACTIVITY_TIMEOUT_MS);
     }
   }, [user]);
@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user, resetInactivityTimer]);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = supabaseAuth.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabaseAuth.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -91,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, fullName?: string) => {
     const redirectUrl = `${window.location.origin}/`;
-    const { error } = await supabase.auth.signUp({
+    const { error } = await supabaseAuth.auth.signUp({
       email,
       password,
       options: {
@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabaseAuth.auth.signInWithPassword({
       email,
       password
     });
@@ -111,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await supabaseAuth.auth.signOut();
   };
 
   return (
