@@ -15,7 +15,7 @@ export function Navbar() {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/');
+    navigate('/auth');
   };
 
   const isActive = (path: string) => location.pathname === path;
