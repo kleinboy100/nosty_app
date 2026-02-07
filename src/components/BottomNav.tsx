@@ -120,27 +120,29 @@ export function BottomNav() {
             </Link>
           ))}
           
-          {/* More Button */}
-          <button
-            onClick={() => setMoreOpen(!moreOpen)}
-            className={cn(
-              "flex flex-col items-center justify-center flex-1 py-1 relative transition-all duration-200",
-              moreOpen
-                ? "text-primary" 
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <div className={cn(
-              "p-1 rounded-lg transition-all duration-200",
-              moreOpen && "bg-primary/10"
-            )}>
-              <MoreHorizontal size={16} className={cn(
-                "transition-transform duration-200",
-                moreOpen && "rotate-90"
-              )} />
-            </div>
-            <span className="text-[9px] mt-0.5 font-medium">More</span>
-          </button>
+          {/* More Button - Only show when not logged in */}
+          {!user && (
+            <button
+              onClick={() => setMoreOpen(!moreOpen)}
+              className={cn(
+                "flex flex-col items-center justify-center flex-1 py-1 relative transition-all duration-200",
+                moreOpen
+                  ? "text-primary" 
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <div className={cn(
+                "p-1 rounded-lg transition-all duration-200",
+                moreOpen && "bg-primary/10"
+              )}>
+                <MoreHorizontal size={16} className={cn(
+                  "transition-transform duration-200",
+                  moreOpen && "rotate-90"
+                )} />
+              </div>
+              <span className="text-[9px] mt-0.5 font-medium">More</span>
+            </button>
+          )}
         </div>
       </nav>
     </>
