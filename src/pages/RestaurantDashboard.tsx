@@ -9,7 +9,7 @@ import { RestaurantOrderCard } from '@/components/RestaurantOrderCard';
 import { YocoSettings } from '@/components/YocoSettings';
 import { MenuManager } from '@/components/MenuManager';
 import { OperatingHoursSettings } from '@/components/OperatingHoursSettings';
- import { Plus, Store, Bell, Volume2, Settings, UtensilsCrossed, BarChart3 } from 'lucide-react';
+ import { Store, Bell, Volume2, Settings, UtensilsCrossed, BarChart3 } from 'lucide-react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 export default function RestaurantDashboard() {
@@ -131,29 +131,23 @@ export default function RestaurantDashboard() {
   const completedOrders = orders.filter(o => ['delivered', 'cancelled'].includes(o.status));
 
   return (
-    <div className="min-h-screen py-4 md:py-8 overflow-x-hidden">
+    <div className="min-h-screen py-4 md:py-8 overflow-x-hidden bg-gradient-to-br from-background via-background to-primary/5">
       <div className="container mx-auto px-3 md:px-4 max-w-full">
         <div className="flex flex-wrap justify-between items-center gap-3 mb-4 md:mb-6">
-          <h1 className="font-display text-xl md:text-2xl font-bold">Dashboard</h1>
-           <div className="flex items-center gap-2">
-             <Link to="/restaurant/analytics">
-               <Button variant="outline" className="text-sm" size="sm">
-                 <BarChart3 size={16} className="mr-1" />
-                 Analytics
-               </Button>
-             </Link>
-             <Link to="/restaurant/register">
-               <Button className="btn-primary text-sm" size="sm">
-                 <Plus size={16} className="mr-1" />
-                 Add
-               </Button>
-             </Link>
-           </div>
+          <h1 className="font-display text-xl md:text-2xl font-bold gradient-text">Dashboard</h1>
+          <Link to="/restaurant/analytics">
+            <Button variant="outline" className="text-sm" size="sm">
+              <BarChart3 size={16} className="mr-1" />
+              Analytics
+            </Button>
+          </Link>
         </div>
 
         {restaurants.length === 0 ? (
-          <div className="text-center py-12 card-elevated">
-            <Store size={48} className="mx-auto text-muted-foreground mb-4" />
+          <div className="text-center py-12 card-elevated bg-gradient-to-br from-card to-primary/5 border-primary/20">
+            <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-2xl flex items-center justify-center">
+              <Store size={32} className="text-primary" />
+            </div>
             <p className="text-muted-foreground mb-4">No restaurants yet</p>
             <Link to="/restaurant/register">
               <Button className="btn-primary">Register Your First Restaurant</Button>
@@ -164,7 +158,7 @@ export default function RestaurantDashboard() {
             {/* Restaurant Selector & Notifications */}
             <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center mb-4 md:mb-6">
               <Select value={selectedRestaurant} onValueChange={setSelectedRestaurant}>
-                <SelectTrigger className="w-full sm:w-48 md:w-56">
+                <SelectTrigger className="w-full sm:w-48 md:w-56 bg-gradient-to-r from-card to-muted/50 border-primary/20 shadow-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -191,32 +185,32 @@ export default function RestaurantDashboard() {
 
             {/* Order Tabs */}
             <Tabs defaultValue="pending" className="w-full overflow-hidden">
-              <TabsList className="mb-4 w-full flex flex-wrap h-auto gap-1 p-1">
-                <TabsTrigger value="pending" className="relative flex-1 min-w-0 text-xs md:text-sm px-2 md:px-3">
+              <TabsList className="mb-4 w-full flex flex-wrap h-auto gap-1 p-1.5 bg-gradient-to-r from-muted/80 to-muted rounded-xl border border-border/50">
+                <TabsTrigger value="pending" className="relative flex-1 min-w-0 text-xs md:text-sm px-2 md:px-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md rounded-lg transition-all">
                   <span className="hidden sm:inline">New </span>Orders
                   {pendingOrders.length > 0 && (
-                    <span className="ml-1 bg-primary text-primary-foreground text-xs w-4 h-4 md:w-5 md:h-5 rounded-full flex items-center justify-center">
+                    <span className="ml-1 bg-primary-foreground text-primary data-[state=active]:bg-primary-foreground data-[state=active]:text-primary text-xs w-4 h-4 md:w-5 md:h-5 rounded-full flex items-center justify-center font-bold">
                       {pendingOrders.length}
                     </span>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="active" className="flex-1 min-w-0 text-xs md:text-sm px-2 md:px-3">
+                <TabsTrigger value="active" className="flex-1 min-w-0 text-xs md:text-sm px-2 md:px-3 data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all">
                   Active
                   {activeOrders.length > 0 && (
-                    <span className="ml-1 bg-blue-500 text-white text-xs w-4 h-4 md:w-5 md:h-5 rounded-full flex items-center justify-center">
+                    <span className="ml-1 bg-blue-100 text-blue-600 text-xs w-4 h-4 md:w-5 md:h-5 rounded-full flex items-center justify-center font-bold">
                       {activeOrders.length}
                     </span>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="completed" className="flex-1 min-w-0 text-xs md:text-sm px-2 md:px-3">
+                <TabsTrigger value="completed" className="flex-1 min-w-0 text-xs md:text-sm px-2 md:px-3 data-[state=active]:bg-green-500 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all">
                   <span className="hidden sm:inline">Completed</span>
                   <span className="sm:hidden">Done</span>
                 </TabsTrigger>
-                <TabsTrigger value="menu" className="flex-1 min-w-0 text-xs md:text-sm px-2 md:px-3">
+                <TabsTrigger value="menu" className="flex-1 min-w-0 text-xs md:text-sm px-2 md:px-3 data-[state=active]:bg-purple-500 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all">
                   <UtensilsCrossed size={14} className="mr-1 shrink-0" />
                   <span className="hidden sm:inline">Menu</span>
                 </TabsTrigger>
-                <TabsTrigger value="settings" className="flex-1 min-w-0 text-xs md:text-sm px-2 md:px-3">
+                <TabsTrigger value="settings" className="flex-1 min-w-0 text-xs md:text-sm px-2 md:px-3 data-[state=active]:bg-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all">
                   <Settings size={14} className="mr-1 shrink-0" />
                   <span className="hidden sm:inline">Settings</span>
                 </TabsTrigger>
