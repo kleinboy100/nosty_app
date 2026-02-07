@@ -197,9 +197,9 @@
      return null;
    }
  
-   return (
-     <div className="min-h-screen py-4 md:py-8">
-       <div className="container mx-auto px-3 md:px-4 max-w-6xl">
+    return (
+      <div className="min-h-screen py-4 md:py-8 overflow-x-hidden">
+        <div className="container mx-auto px-3 md:px-4 max-w-6xl overflow-hidden">
          {/* Header */}
          <div className="flex flex-wrap items-center gap-3 mb-6">
            <Link to="/restaurant/dashboard">
@@ -310,14 +310,14 @@
                    <CardDescription>Daily order count</CardDescription>
                  </CardHeader>
                  <CardContent>
-                   <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                     <BarChart data={dailyData}>
-                       <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                       <YAxis tick={{ fontSize: 12 }} />
-                       <ChartTooltip content={<ChartTooltipContent />} />
-                       <Bar dataKey="orders" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                     </BarChart>
-                   </ChartContainer>
+                    <ChartContainer config={chartConfig} className="h-[250px] w-full min-w-0">
+                      <BarChart data={dailyData} margin={{ left: -10, right: 10 }}>
+                        <XAxis dataKey="date" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
+                        <YAxis tick={{ fontSize: 10 }} width={35} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Bar dataKey="orders" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ChartContainer>
                  </CardContent>
                </Card>
  
@@ -328,20 +328,20 @@
                    <CardDescription>Daily revenue (ZAR)</CardDescription>
                  </CardHeader>
                  <CardContent>
-                   <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                     <LineChart data={dailyData}>
-                       <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                       <YAxis tick={{ fontSize: 12 }} />
-                       <ChartTooltip content={<ChartTooltipContent />} />
-                       <Line 
-                         type="monotone" 
-                         dataKey="revenue" 
-                         stroke="hsl(var(--chart-2))" 
-                         strokeWidth={2}
-                         dot={{ fill: 'hsl(var(--chart-2))' }}
-                       />
-                     </LineChart>
-                   </ChartContainer>
+                    <ChartContainer config={chartConfig} className="h-[250px] w-full min-w-0">
+                      <LineChart data={dailyData} margin={{ left: -10, right: 10 }}>
+                        <XAxis dataKey="date" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
+                        <YAxis tick={{ fontSize: 10 }} width={40} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Line 
+                          type="monotone" 
+                          dataKey="revenue" 
+                          stroke="hsl(var(--chart-2))" 
+                          strokeWidth={2}
+                          dot={{ fill: 'hsl(var(--chart-2))' }}
+                        />
+                      </LineChart>
+                    </ChartContainer>
                  </CardContent>
                </Card>
  
@@ -353,24 +353,24 @@
                  </CardHeader>
                  <CardContent>
                    <div className="flex flex-col md:flex-row items-center gap-6">
-                     <ChartContainer config={chartConfig} className="h-[250px] w-full md:w-1/2">
-                       <PieChart>
-                         <ChartTooltip content={<ChartTooltipContent />} />
-                         <Pie
-                           data={statusData}
-                           dataKey="count"
-                           nameKey="status"
-                           cx="50%"
-                           cy="50%"
-                           outerRadius={80}
-                           label={({ status, count }) => `${status}: ${count}`}
-                         >
-                           {statusData.map((entry, index) => (
-                             <Cell key={`cell-${index}`} fill={entry.fill} />
-                           ))}
-                         </Pie>
-                       </PieChart>
-                     </ChartContainer>
+                      <ChartContainer config={chartConfig} className="h-[200px] md:h-[250px] w-full md:w-1/2 min-w-0">
+                        <PieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                          <Pie
+                            data={statusData}
+                            dataKey="count"
+                            nameKey="status"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={60}
+                            label={false}
+                          >
+                            {statusData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                          </Pie>
+                        </PieChart>
+                      </ChartContainer>
                      <div className="flex flex-wrap justify-center gap-3">
                        {statusData.map((item) => (
                          <div key={item.status} className="flex items-center gap-2">
