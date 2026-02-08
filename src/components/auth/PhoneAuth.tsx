@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Phone, ArrowRight, CheckCircle, Loader2 } from 'lucide-react';
+import { Phone, ArrowRight, CheckCircle, Loader2, User } from 'lucide-react';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 interface PhoneAuthProps {
@@ -12,6 +12,7 @@ interface PhoneAuthProps {
 }
 
 export function PhoneAuth({ onSuccess }: PhoneAuthProps) {
+  const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
@@ -41,6 +42,15 @@ export function PhoneAuth({ onSuccess }: PhoneAuthProps) {
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!fullName.trim()) {
+      toast({
+        title: "Full name required",
+        description: "Please enter your full name",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!phone.trim()) {
       toast({
         title: "Phone number required",
@@ -57,6 +67,9 @@ export function PhoneAuth({ onSuccess }: PhoneAuthProps) {
       
       const { error } = await supabase.auth.signInWithOtp({
         phone: formattedPhone,
+        options: {
+          data: { full_name: fullName }
+        }
       });
       
       if (error) {
@@ -197,6 +210,22 @@ export function PhoneAuth({ onSuccess }: PhoneAuthProps) {
 
   return (
     <form onSubmit={handleSendOTP} className="space-y-6">
+      <div className="space-y-2">
+        <Label htmlFor="fullName">Full Name</Label>
+        <div className="relative">
+          <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+          <Input
+            id="fullName"
+            type="text"
+            placeholder="Enter your full name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            className="pl-10"
+            required
+          />
+        </div>
+      </div>
+
       <div className="space-y-2">
         <Label htmlFor="phone">Phone Number</Label>
         <div className="relative">
