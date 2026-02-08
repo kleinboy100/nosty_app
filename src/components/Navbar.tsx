@@ -106,9 +106,9 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Mobile: Only show logout button if logged in */}
+          {/* Mobile: Show profile/logout if logged in, sign in button if logged out */}
           <div className="md:hidden">
-            {user && (
+            {user ? (
               <div className="flex items-center gap-1">
                 <Link to="/profile">
                   <Button variant="ghost" size="icon" className="rounded-xl">
@@ -119,6 +119,10 @@ export function Navbar() {
                   <LogOut size={20} />
                 </Button>
               </div>
+            ) : (
+              <Link to="/auth">
+                <Button className="btn-primary rounded-xl px-4 text-sm">Sign In</Button>
+              </Link>
             )}
           </div>
         </div>
