@@ -324,7 +324,9 @@ export default function OrderDetail() {
   return (
     <div className="min-h-screen py-8">
       <div className="container mx-auto px-4 max-w-2xl">
-        <h1 className="font-display text-2xl font-bold mb-2">Order Details</h1>
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="font-display text-2xl font-bold">Order #{String(order.order_number).padStart(5, '0')}</h1>
+        </div>
         <p className="text-muted-foreground mb-6">From: {order.restaurants?.name}</p>
 
         {/* Notification Permission Banner */}

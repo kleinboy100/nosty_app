@@ -22,6 +22,7 @@ interface Order {
   payment_method?: string;
   payment_confirmed?: boolean;
   order_type?: 'delivery' | 'collection';
+  order_number?: number;
 }
 
 interface RestaurantOrderCardProps {
@@ -87,7 +88,7 @@ export function RestaurantOrderCard({ order, onUpdateStatus, isNew }: Restaurant
       <div className="flex justify-between items-start mb-3">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-semibold">Order #{order.id.slice(0, 8)}</p>
+            <p className="font-semibold">Order #{order.order_number ? String(order.order_number).padStart(5, '0') : order.id.slice(0, 8)}</p>
             {isNew && (
               <span className="flex items-center gap-1 bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full">
                 <Bell size={12} />

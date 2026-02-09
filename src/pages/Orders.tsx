@@ -43,7 +43,9 @@ export default function Orders() {
             {orders.map(order => (
               <Link key={order.id} to={`/orders/${order.id}`} className="card-elevated p-4 flex justify-between items-center block">
                 <div>
-                  <p className="font-semibold">{order.restaurants?.name}</p>
+                  <p className="font-semibold">
+                    #{order.order_number ? String(order.order_number).padStart(5, '0') : '—'} • {order.restaurants?.name}
+                  </p>
                   <p className="text-sm text-muted-foreground">{new Date(order.created_at).toLocaleDateString()}</p>
                 </div>
                 <div className="text-right">
