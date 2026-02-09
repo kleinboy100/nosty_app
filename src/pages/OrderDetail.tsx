@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { OrderStatusTracker } from '@/components/OrderStatusTracker';
 import { OrderChat } from '@/components/OrderChat';
+import { CallRestaurantButton } from '@/components/CallRestaurantButton';
 import { ReviewForm } from '@/components/ReviewForm';
 import { PaymentMethodSelector } from '@/components/PaymentMethodSelector';
 import { DeliveryETA } from '@/components/DeliveryETA';
@@ -342,7 +343,15 @@ export default function OrderDetail() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold">Order Status</h2>
             {order.status !== 'cancelled' && order.status !== 'delivered' && (
-              <OrderChat orderId={order.id} userType="customer" />
+              <div className="flex items-center gap-2">
+                <CallRestaurantButton 
+                  orderId={order.id} 
+                  orderStatus={order.status}
+                  variant="outline"
+                  size="sm"
+                />
+                <OrderChat orderId={order.id} userType="customer" />
+              </div>
             )}
           </div>
           <OrderStatusTracker status={order.status} orderType={order.order_type || 'delivery'} />
