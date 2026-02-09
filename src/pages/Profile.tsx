@@ -227,48 +227,84 @@ export default function Profile() {
             <CardDescription>Your basic account details</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="email" className="flex items-center gap-2">
-                <Mail size={14} />
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={user.email || ''}
-                disabled
-                className="mt-1.5 bg-muted"
-              />
-              <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
-            </div>
+            {/* Show email for email-based auth */}
+            {user.email && (
+              <div>
+                <Label htmlFor="email" className="flex items-center gap-2">
+                  <Mail size={14} />
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={user.email || ''}
+                  disabled
+                  className="mt-1.5 bg-muted"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
+              </div>
+            )}
+
+            {/* Show phone for phone-based auth (read-only) */}
+            {user.phone && (
+              <div>
+                <Label htmlFor="authPhone" className="flex items-center gap-2">
+                  <Phone size={14} />
+                  Phone Number
+                </Label>
+                <Input
+                  id="authPhone"
+                  type="tel"
+                  value={user.phone || ''}
+                  disabled
+                  className="mt-1.5 bg-muted"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Phone number cannot be changed</p>
+              </div>
+            )}
 
             <div>
               <Label htmlFor="fullName" className="flex items-center gap-2">
                 <User size={14} />
-                Full Name
+                {user.phone ? 'Username' : 'Full Name'}
               </Label>
-              <Input
-                id="fullName"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Enter your full name"
-                className="mt-1.5"
-              />
+              {user.phone ? (
+                <>
+                  <Input
+                    id="fullName"
+                    value={fullName}
+                    disabled
+                    className="mt-1.5 bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Username cannot be changed</p>
+                </>
+              ) : (
+                <Input
+                  id="fullName"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Enter your full name"
+                  className="mt-1.5"
+                />
+              )}
             </div>
 
-            <div>
-              <Label htmlFor="phone" className="flex items-center gap-2">
-                <Phone size={14} />
-                Phone Number
-              </Label>
-              <Input
-                id="phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="e.g. 011 123 4567"
-                className="mt-1.5"
-              />
-            </div>
+            {/* Only show editable phone field for email-authenticated users */}
+            {!user.phone && (
+              <div>
+                <Label htmlFor="phone" className="flex items-center gap-2">
+                  <Phone size={14} />
+                  Phone Number
+                </Label>
+                <Input
+                  id="phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="e.g. 011 123 4567"
+                  className="mt-1.5"
+                />
+              </div>
+            )}
 
             <div>
               <Label htmlFor="address" className="flex items-center gap-2">
