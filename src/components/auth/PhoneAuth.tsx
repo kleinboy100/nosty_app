@@ -121,18 +121,8 @@ export function PhoneAuth({ onSuccess }: PhoneAuthProps) {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim()) {
-      toast({ title: "Username required", description: "Please enter your username", variant: "destructive" });
-      return;
-    }
     if (!password.trim()) {
       toast({ title: "Password required", description: "Please enter your password", variant: "destructive" });
-      return;
-    }
-
-    // Verify username matches
-    if (existingUsername && username.trim().toLowerCase() !== existingUsername.toLowerCase()) {
-      toast({ title: "Username mismatch", description: "The username doesn't match our records for this phone number", variant: "destructive" });
       return;
     }
 
@@ -233,15 +223,7 @@ export function PhoneAuth({ onSuccess }: PhoneAuthProps) {
         </div>
         <div className="space-y-1 text-center">
           <h2 className="text-xl font-semibold">Welcome back!</h2>
-          <p className="text-muted-foreground text-sm">Enter your credentials to sign in</p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="loginUsername">Username</Label>
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-            <Input id="loginUsername" placeholder="Enter your username" value={username} onChange={(e) => setUsername(e.target.value)} className="pl-10" required />
-          </div>
+          <p className="text-muted-foreground text-sm">Enter your password to sign in</p>
         </div>
 
         <div className="space-y-2">
