@@ -6,6 +6,7 @@ import { GoogleAuth } from '@/components/auth/GoogleAuth';
 import { PhoneAuth } from '@/components/auth/PhoneAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Mail, Phone } from 'lucide-react';
+import heroFood from '@/assets/hero-food.jpg';
 
 export default function Auth() {
   const { user } = useAuth();
@@ -27,8 +28,8 @@ export default function Auth() {
       <div className="w-full max-w-md">
         <div className="bg-card rounded-2xl border border-border/50 p-8 shadow-xl">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <span className="text-3xl">🍔</span>
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl overflow-hidden">
+              <img src={heroFood} alt="Nosty's Fresh Fast Food" className="w-full h-full object-cover" />
             </div>
             <h1 className="font-display text-2xl font-bold text-foreground mb-2">
               Welcome Back
