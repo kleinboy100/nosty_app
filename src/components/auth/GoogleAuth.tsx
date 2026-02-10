@@ -9,23 +9,44 @@ export function GoogleAuth() {
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/`,
-        queryParams: {
-          prompt: 'select_account'
+    try {
+      const isCustomDomain =
+        !window.location.hostname.includes('lovable.app') &&
+        !window.location.hostname.includes('lovableproject.com');
+
+      if (isCustomDomain) {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/`,
+            skipBrowserRedirect: true,
+            queryParams: { prompt: 'select_account' }
+          }
+        });
+        if (error) throw error;
+        if (data?.url) {
+          window.location.href = data.url;
+          return;
         }
+      } else {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/`,
+            queryParams: { prompt: 'select_account' }
+          }
+        });
+        if (error) throw error;
       }
-    });
-    if (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
         description: error.message,
         variant: "destructive"
       });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const restaurant = order.restaurants as { id: string; name: string; phone: string | null };
+    const restaurant = order.restaurants as unknown as { id: string; name: string; phone: string | null };
     
     if (!restaurant?.phone) {
       return new Response(
