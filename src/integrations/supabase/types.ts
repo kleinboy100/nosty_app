@@ -14,6 +14,114 @@ export type Database = {
   }
   public: {
     Tables: {
+      events: {
+        Row: {
+          event_date: string
+          id: string
+          impact_score: number
+        }
+        Insert: {
+          event_date: string
+          id?: string
+          impact_score: number
+        }
+        Update: {
+          event_date?: string
+          id?: string
+          impact_score?: number
+        }
+        Relationships: []
+      }
+      ingredient_stock: {
+        Row: {
+          created_at: string | null
+          current_stock: number | null
+          id: number
+          ingredient_name: string
+          last_updated: string | null
+          max_stock_level: number | null
+          min_stock_level: number | null
+          unit: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_stock?: number | null
+          id?: number
+          ingredient_name: string
+          last_updated?: string | null
+          max_stock_level?: number | null
+          min_stock_level?: number | null
+          unit: string
+        }
+        Update: {
+          created_at?: string | null
+          current_stock?: number | null
+          id?: number
+          ingredient_name?: string
+          last_updated?: string | null
+          max_stock_level?: number | null
+          min_stock_level?: number | null
+          unit?: string
+        }
+        Relationships: []
+      }
+      meal_ingredients: {
+        Row: {
+          created_at: string | null
+          id: string
+          ingredient_name: string
+          meal_name: string
+          order_id: string
+          quantity_used: number
+          unit: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ingredient_name: string
+          meal_name: string
+          order_id: string
+          quantity_used: number
+          unit: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ingredient_name?: string
+          meal_name?: string
+          order_id?: string
+          quantity_used?: number
+          unit?: string
+        }
+        Relationships: []
+      }
+      meal_recipes: {
+        Row: {
+          created_at: string | null
+          id: string
+          ingredient_name: string
+          meal_name: string
+          quantity_per_meal: number
+          unit: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ingredient_name: string
+          meal_name: string
+          quantity_per_meal: number
+          unit: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ingredient_name?: string
+          meal_name?: string
+          quantity_per_meal?: number
+          unit?: string
+        }
+        Relationships: []
+      }
       menu_items: {
         Row: {
           category: string
@@ -433,6 +541,90 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sales_history: {
+        Row: {
+          id: string
+          item_name: string
+          quantity: number
+          sale_date: string
+        }
+        Insert: {
+          id?: string
+          item_name: string
+          quantity: number
+          sale_date: string
+        }
+        Update: {
+          id?: string
+          item_name?: string
+          quantity?: number
+          sale_date?: string
+        }
+        Relationships: []
+      }
+      stock: {
+        Row: {
+          created_at: string | null
+          current_stock: number | null
+          id: string
+          item_name: string
+          last_updated: string | null
+          max_stock: number | null
+          min_stock: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_stock?: number | null
+          id?: string
+          item_name: string
+          last_updated?: string | null
+          max_stock?: number | null
+          min_stock?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          current_stock?: number | null
+          id?: string
+          item_name?: string
+          last_updated?: string | null
+          max_stock?: number | null
+          min_stock?: number | null
+        }
+        Relationships: []
+      }
+      stock_transactions: {
+        Row: {
+          created_at: string | null
+          id: string
+          item_name: string
+          new_stock: number | null
+          notes: string | null
+          previous_stock: number | null
+          quantity: number
+          transaction_type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          item_name: string
+          new_stock?: number | null
+          notes?: string | null
+          previous_stock?: number | null
+          quantity: number
+          transaction_type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          item_name?: string
+          new_stock?: number | null
+          notes?: string | null
+          previous_stock?: number | null
+          quantity?: number
+          transaction_type?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {
