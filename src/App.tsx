@@ -17,7 +17,8 @@ import RestaurantRegister from "./pages/RestaurantRegister";
 import RestaurantDashboard from "./pages/RestaurantDashboard";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
- import RestaurantAnalytics from "./pages/RestaurantAnalytics";
+import RestaurantAnalytics from "./pages/RestaurantAnalytics";
+import { OAuthCallback } from "./pages/OAuthCallback";
 
 const queryClient = new QueryClient();
 
