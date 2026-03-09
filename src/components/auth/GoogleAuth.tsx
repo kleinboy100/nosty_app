@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { useToast } from '@/hooks/use-toast';
 
@@ -10,11 +11,29 @@ export function GoogleAuth() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      const { error } = await lovable.auth.signInWithOAuth('google', {
-        redirect_uri: window.location.origin,
-        extraParams: { prompt: 'select_account' },
-      });
-      if (error) throw error;
+      const isLovableDomain = window.location.hostname.includes('lovable.app');
+
+      if (isLovableDomain) {
+        // Use managed auth on Lovable domains
+        const { error } = await lovable.auth.signInWithOAuth('google', {
+          redirect_uri: window.location.origin,
+          extraParams: { prompt: 'select_account' },
+        });
+        if (error) throw error;
+      } else {
+        // On custom domains (Netlify, etc.), use direct Supabase OAuth
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/`,
+            skipBrowserRedirect: true,
+          },
+        });
+        if (error) throw error;
+        if (data?.url) {
+          window.location.href = data.url;
+        }
+      }
     } catch (error: any) {
       toast({
         title: "Error",
