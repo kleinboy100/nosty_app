@@ -17,7 +17,8 @@ import RestaurantRegister from "./pages/RestaurantRegister";
 import RestaurantDashboard from "./pages/RestaurantDashboard";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
- import RestaurantAnalytics from "./pages/RestaurantAnalytics";
+import RestaurantAnalytics from "./pages/RestaurantAnalytics";
+import { OAuthCallback } from "./pages/OAuthCallback";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
                 <Route path="/restaurant/dashboard" element={<RestaurantDashboard />} />
                  <Route path="/restaurant/analytics" element={<RestaurantAnalytics />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/~oauth" element={<OAuthCallback />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </div>
