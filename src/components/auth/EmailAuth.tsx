@@ -20,47 +20,55 @@ export function EmailAuth({ onSuccess }: EmailAuthProps) {
   
   const { toast } = useToast();
 
+  // Get the correct redirect URL for the current environment
+  const getRedirectUrl = () => {
+    // Always use the current origin to support Netlify/custom domains
+    return `${window.location.origin}/`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
+    const redirectUrl = getRedirectUrl();
+
     try {
       if (isLogin) {
-        // For login, send magic link
-        const { error } = await supabase.auth.signInWithOtp({
+        // Try password login first for better UX
+        const { error: passwordError } = await supabase.auth.signInWithPassword({
           email,
-          options: {
-            shouldCreateUser: false,
-            emailRedirectTo: `${window.location.origin}/`,
-          }
+          password
         });
         
-        if (error) {
-          // If magic link fails (user might not exist), try password login
-          const { error: passwordError } = await supabase.auth.signInWithPassword({
+        if (passwordError) {
+          // If password fails, try magic link
+          const { error } = await supabase.auth.signInWithOtp({
             email,
-            password
+            options: {
+              shouldCreateUser: false,
+              emailRedirectTo: redirectUrl,
+            }
           });
           
-          if (passwordError) {
+          if (error) {
             toast({
               title: "Error signing in",
-              description: passwordError.message,
+              description: "Invalid email or password",
               variant: "destructive"
             });
           } else {
+            setEmailSent(true);
             toast({
-              title: "Welcome back!",
-              description: "You have successfully signed in."
+              title: "Check your email",
+              description: "We sent you a confirmation link. Click the link to sign in."
             });
-            onSuccess();
           }
         } else {
-          setEmailSent(true);
           toast({
-            title: "Check your email",
-            description: "We sent you a confirmation link. Click the link to sign in."
+            title: "Welcome back!",
+            description: "You have successfully signed in."
           });
+          onSuccess();
         }
       } else {
         // For signup, send magic link for email verification
@@ -68,7 +76,7 @@ export function EmailAuth({ onSuccess }: EmailAuthProps) {
           email,
           options: {
             shouldCreateUser: true,
-            emailRedirectTo: `${window.location.origin}/`,
+            emailRedirectTo: redirectUrl,
             data: { 
               full_name: fullName,
             }
