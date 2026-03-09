@@ -20,11 +20,7 @@ export function EmailAuth({ onSuccess }: EmailAuthProps) {
   
   const { toast } = useToast();
 
-  // Get the correct redirect URL for the current environment
-  const getRedirectUrl = () => {
-    // Always use the current origin to support Netlify/custom domains
-    return `${window.location.origin}/`;
-  };
+  const getRedirectUrl = () => `${window.location.origin}/`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

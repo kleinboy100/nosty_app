@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { lovable } from '@/integrations/lovable/index';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+
+const isCustomDomain = () =>
+  !window.location.hostname.includes('lovable.app') &&
+  !window.location.hostname.includes('lovableproject.com');
 
 export function GoogleAuth() {
   const [loading, setLoading] = useState(false);
@@ -10,11 +15,26 @@ export function GoogleAuth() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      const { error } = await lovable.auth.signInWithOAuth('google', {
-        redirect_uri: window.location.origin,
-        extraParams: { prompt: 'select_account' },
-      });
-      if (error) throw error;
+      if (isCustomDomain()) {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/`,
+            skipBrowserRedirect: true,
+            queryParams: { prompt: 'select_account' },
+          },
+        });
+        if (error) throw error;
+        if (data?.url) {
+          window.location.href = data.url;
+        }
+      } else {
+        const { error } = await lovable.auth.signInWithOAuth('google', {
+          redirect_uri: window.location.origin,
+          extraParams: { prompt: 'select_account' },
+        });
+        if (error) throw error;
+      }
     } catch (error: any) {
       toast({
         title: "Error",
