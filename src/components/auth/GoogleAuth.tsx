@@ -1,22 +1,11 @@
+// src/components/auth/GoogleAuth.tsx
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { lovable } from '@/integrations/lovable/index';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-const isCustomDomain = () =>
-  !window.location.hostname.includes('lovable.app') &&
-  !window.location.hostname.includes('lovableproject.com');
-
-// ✅ Reusable, safe redirect URI resolver
-const getRedirectUri = (): string => {
-  const envUrl = import.meta.env.VITE_APP_URL?.trim();
-  if (envUrl && envUrl !== 'undefined' && envUrl.startsWith('http')) {
-    return envUrl.replace(/\/+$/, '') + '/';
-  }
-  // Fallback: origin + normalized slash
-  return window.location.origin.replace(/\/+$/, '') + '/';
-};
+// ✅ Get Netlify URL from VITE_APP_URL (removes trailing "/**")
+const REDIRECT_URI = import.meta.env.VITE_APP_URL.replace(/\/\*\*$/, '');
 
 export function GoogleAuth() {
   const [loading, setLoading] = useState(false);
@@ -24,44 +13,24 @@ export function GoogleAuth() {
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
+
     try {
-      const redirectUri = getRedirectUri();
+      // ✅ ALWAYS use Lovable's bridge + CORRECT provider name ('2google')
+      const { error } = await lovable.auth.signInWithOAuth('2google', { // 👈 '2google' NOT 'google'
+        redirect_uri: REDIRECT_URI,               // ← Netlify URL (from VITE_APP_URL)
+        extraParams: { prompt: 'select_account' },
+      });
 
-      if (isCustomDomain()) {
-        // ✅ Supabase flow (for Netlify/custom domains)
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: redirectUri,
-            skipBrowserRedirect: true,
-            queryParams: { prompt: 'select_account' },
-          },
-        });
-        if (error) throw error;
-        if (data?.url) {
-          window.location.href = data.url;
-        } else {
-          throw new Error('No OAuth URL returned from Supabase.');
-        }
-      } else {
-        // ✅ Lovable flow (for lovable.app domains)
-        const { error } = await lovable.auth.signInWithOAuth('google', {
-          redirect_uri: redirectUri,
-          extraParams: { prompt: 'select_account' },
-        });
-        if (error) throw error;
-      }
-    } catch (err: any) {
-      const errorMessage =
-        err?.message?.includes('NetworkError') || err?.name === 'AbortError'
-          ? 'Network request failed. Please check your connection and try again.'
-          : err?.message ||
-            'Sign-in failed. Please try again or contact support.';
+      // If an error occurs BEFORE redirect, show it.
+      // (On success, Lovable redirects — the code below NEVER runs)
+      if (error) throw error;
 
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Google sign‑in failed';
       toast({
-        title: 'Sign-in Failed',
-        description: errorMessage,
-        variant: 'destructive',
+        title: "Sign‑in Error",
+        description: message,
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -72,43 +41,17 @@ export function GoogleAuth() {
     <Button
       type="button"
       variant="outline"
-      className="w-full h-12 flex items-center justify-center gap-2"
+      className="w-full h-12"
       onClick={handleGoogleSignIn}
       disabled={loading}
     >
-      {loading ? (
-        <>
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-          <span>Signing in...</span>
-        </>
-      ) : (
-        <>
-          <svg
-            className="h-5 w-5"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-          >
-            <path
-              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-2.03 2.16-4.92 2.16-1.88 0-3.54-.73-4.81-2.2l-3.83 3.83c2.33 1.43 5.48 2.2 9.1 2.2 6.99 0 13.02-5.72 13.02-13.02v-.8z"
-              fill="#4285F4"
-            />
-            <path
-              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-5.57-4.33c-.98.72-2.23 1.15-3.71 1.15-2.86 0-5.29-1.93-6.16-4.53H.83v2.84C2.68 18.77 7.04 23 12 23z"
-              fill="#34A853"
-            />
-            <path
-              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H0C0 8.07 0 9.07 0 10.07s0 2.00 0 3.00v.93z"
-              fill="#FBBC05"
-            />
-            <path
-              d="M12 5.89c1.64 0 3.06.56 4.23 1.67l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.83 3.44 1.5 7.07l3.66 2.84c.86-2.6 3.3-4.53 6.16-4.53z"
-              fill="#EA4335"
-            />
-          </svg>
-          <span>Continue with Google</span>
-        </>
-      )}
+      <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+      </svg>
+      {loading ? 'Signing in…' : 'Continue with Google'}
     </Button>
   );
-    }
+}
