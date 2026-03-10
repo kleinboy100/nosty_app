@@ -19,18 +19,36 @@ export type Database = {
           event_date: string
           id: string
           impact_score: number
+          restaurant_id: string | null
         }
         Insert: {
           event_date: string
           id?: string
           impact_score: number
+          restaurant_id?: string | null
         }
         Update: {
           event_date?: string
           id?: string
           impact_score?: number
+          restaurant_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "events_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ingredient_stock: {
         Row: {
@@ -41,6 +59,7 @@ export type Database = {
           last_updated: string | null
           max_stock_level: number | null
           min_stock_level: number | null
+          restaurant_id: string | null
           unit: string
         }
         Insert: {
@@ -51,6 +70,7 @@ export type Database = {
           last_updated?: string | null
           max_stock_level?: number | null
           min_stock_level?: number | null
+          restaurant_id?: string | null
           unit: string
         }
         Update: {
@@ -61,9 +81,25 @@ export type Database = {
           last_updated?: string | null
           max_stock_level?: number | null
           min_stock_level?: number | null
+          restaurant_id?: string | null
           unit?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ingredient_stock_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingredient_stock_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       meal_ingredients: {
         Row: {
@@ -73,6 +109,7 @@ export type Database = {
           meal_name: string
           order_id: string
           quantity_used: number
+          restaurant_id: string | null
           unit: string
         }
         Insert: {
@@ -82,6 +119,7 @@ export type Database = {
           meal_name: string
           order_id: string
           quantity_used: number
+          restaurant_id?: string | null
           unit: string
         }
         Update: {
@@ -91,9 +129,25 @@ export type Database = {
           meal_name?: string
           order_id?: string
           quantity_used?: number
+          restaurant_id?: string | null
           unit?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "meal_ingredients_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_ingredients_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       meal_recipes: {
         Row: {
@@ -547,21 +601,39 @@ export type Database = {
           id: string
           item_name: string
           quantity: number
+          restaurant_id: string | null
           sale_date: string
         }
         Insert: {
           id?: string
           item_name: string
           quantity: number
+          restaurant_id?: string | null
           sale_date: string
         }
         Update: {
           id?: string
           item_name?: string
           quantity?: number
+          restaurant_id?: string | null
           sale_date?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sales_history_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_history_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stock: {
         Row: {
@@ -572,6 +644,7 @@ export type Database = {
           last_updated: string | null
           max_stock: number | null
           min_stock: number | null
+          restaurant_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -581,6 +654,7 @@ export type Database = {
           last_updated?: string | null
           max_stock?: number | null
           min_stock?: number | null
+          restaurant_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -590,8 +664,24 @@ export type Database = {
           last_updated?: string | null
           max_stock?: number | null
           min_stock?: number | null
+          restaurant_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "stock_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stock_transactions: {
         Row: {
@@ -602,6 +692,7 @@ export type Database = {
           notes: string | null
           previous_stock: number | null
           quantity: number
+          restaurant_id: string | null
           transaction_type: string | null
         }
         Insert: {
@@ -612,6 +703,7 @@ export type Database = {
           notes?: string | null
           previous_stock?: number | null
           quantity: number
+          restaurant_id?: string | null
           transaction_type?: string | null
         }
         Update: {
@@ -622,9 +714,25 @@ export type Database = {
           notes?: string | null
           previous_stock?: number | null
           quantity?: number
+          restaurant_id?: string | null
           transaction_type?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "stock_transactions_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_transactions_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
