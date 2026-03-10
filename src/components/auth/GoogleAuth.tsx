@@ -4,8 +4,11 @@ import { Button } from '@/components/ui/button';
 import { lovable } from '@/integrations/lovable/index';
 import { useToast } from '@/hooks/use-toast';
 
-// ✅ Use the Lovable OAuth callback URL (NOT Netlify home page!)
-const REDIRECT_URI = 'https://plate-pal-realtime.lovable.app/~oauth/callback';
+// ✅ Must match Google Cloud Console + Lovable dashboard
+const LOVABLE_CALLBACK_URI = 'https://oauth.lovable.app/callback';
+
+// ✅ Final destination after login
+const APP_REDIRECT_URL = 'https://nostyfreshfastfoodapp.netlify.app';
 
 export function GoogleAuth() {
   const [loading, setLoading] = useState(false);
@@ -17,18 +20,23 @@ export function GoogleAuth() {
     try {
       // ✅ Use '2google' (Lovable's provider name)
       const { error } = await lovable.auth.signInWithOAuth('2google', {
-        redirect_uri: REDIRECT_URI,               // ← Lovable bridge URL
+        redirect_uri: LOVABLE_CALLBACK_URI,       // ← Must match Google + Lovable
+        options: {
+          redirectTo: APP_REDIRECT_URL,          // ← Where user lands after login
+        },
         extraParams: { prompt: 'select_account' },
       });
 
       if (error) throw error;
 
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Google sign‑in failed';
+      const message =
+        err instanceof Error ? err.message : 'Google sign-in failed';
+
       toast({
-        title: "Sign‑in Error",
+        title: 'Sign-in Error',
         description: message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -52,4 +60,4 @@ export function GoogleAuth() {
       {loading ? 'Signing in…' : 'Continue with Google'}
     </Button>
   );
-}
+        }
