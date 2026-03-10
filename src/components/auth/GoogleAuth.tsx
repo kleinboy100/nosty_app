@@ -1,14 +1,13 @@
 // src/components/auth/GoogleAuth.tsx
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { useToast } from '@/hooks/use-toast';
 
-// ✅ Must match Google Cloud Console + Lovable dashboard
-const LOVABLE_CALLBACK_URI = 'https://oauth.lovable.app/callback';
-
-// ✅ Final destination after login
-const APP_REDIRECT_URL = 'https://nostyfreshfastfoodapp.netlify.app';
+const isCustomDomain = () =>
+  !window.location.hostname.includes('lovable.app') &&
+  !window.location.hostname.includes('lovableproject.com');
 
 export function GoogleAuth() {
   const [loading, setLoading] = useState(false);
@@ -18,14 +17,26 @@ export function GoogleAuth() {
     setLoading(true);
 
     try {
-      // ✅ Use '2google' (Lovable's provider name)
-      const { error } = await lovable.auth.signInWithOAuth('2google', {
-        redirect_uri: LOVABLE_CALLBACK_URI,       // ← Must match Google + Lovable
-        options: {
-          redirectTo: APP_REDIRECT_URL,          // ← Where user lands after login
-        },
-        extraParams: { prompt: 'select_account' },
-      });
+      if (isCustomDomain()) {
+        // On custom domains (Netlify), use Supabase directly to avoid redirect back to lovable.app
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/`,
+            skipBrowserRedirect: true,
+            queryParams: { prompt: 'select_account' },
+          },
+        });
+        if (error) throw error;
+        if (data?.url) window.location.href = data.url;
+      } else {
+        // On Lovable preview, use managed auth
+        const { error } = await lovable.auth.signInWithOAuth('google', {
+          redirect_uri: window.location.origin,
+          extraParams: { prompt: 'select_account' },
+        });
+        if (error) throw error;
+      }
 
       if (error) throw error;
 
