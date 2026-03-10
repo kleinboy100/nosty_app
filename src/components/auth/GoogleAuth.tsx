@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 const LOVABLE_CALLBACK_URI = 'https://oauth.lovable.app/callback';
 
 // ✅ Final destination after login
-const APP_REDIRECT_URL = 'https://nostyfreshfastfoodapp.netlify.app';
+const APP_REDIRECT_URL = 'https://nostyapp.netlify.app';
 
 export function GoogleAuth() {
   const [loading, setLoading] = useState(false);
