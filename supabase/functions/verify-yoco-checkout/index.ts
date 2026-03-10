@@ -133,8 +133,9 @@ Deno.serve(async (req) => {
 
     if (!checkoutRes.ok) {
       const text = await checkoutRes.text();
+      console.error("Yoco checkout fetch error:", text);
       return new Response(
-        JSON.stringify({ confirmed: false, reason: "checkout_fetch_failed", details: text }),
+        JSON.stringify({ confirmed: false, reason: "checkout_fetch_failed" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
