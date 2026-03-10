@@ -38,7 +38,6 @@ export function GoogleAuth() {
         if (error) throw error;
       }
 
-      if (error) throw error;
 
     } catch (err) {
       const message =
