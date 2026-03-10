@@ -214,13 +214,11 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("Error calculating distance:", error);
-    const message = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
       JSON.stringify({ 
         distanceKm: 5,
         durationMinutes: 15,
-        method: 'error-fallback',
-        error: message
+        method: 'error-fallback'
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
