@@ -119,7 +119,28 @@ serve(async (req) => {
     console.log("Authenticated user:", claimsData.claims.sub);
 
     const body: RequestBody = await req.json();
-    console.log("Calculate distance request:", body);
+    console.log("Calculate distance request received");
+
+    // Validate coordinate bounds before passing to external APIs
+    const isValidCoord = (c: unknown): c is { lat: number; lng: number } =>
+      typeof c === 'object' && c !== null &&
+      typeof (c as any).lat === 'number' && isFinite((c as any).lat) &&
+      typeof (c as any).lng === 'number' && isFinite((c as any).lng) &&
+      (c as any).lat >= -90 && (c as any).lat <= 90 &&
+      (c as any).lng >= -180 && (c as any).lng <= 180;
+
+    if (body.restaurantCoords && !isValidCoord(body.restaurantCoords)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid restaurant coordinates' }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (body.customerCoords && !isValidCoord(body.customerCoords)) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid customer coordinates' }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     let restaurantCoords: { lat: number; lng: number } | null = body.restaurantCoords || null;
     let customerCoords: { lat: number; lng: number } | null = body.customerCoords || null;
