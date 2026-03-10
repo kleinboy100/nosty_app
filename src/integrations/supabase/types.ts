@@ -752,6 +752,7 @@ export type Database = {
             }
             Returns: string
           }
+      is_any_restaurant_owner: { Args: never; Returns: boolean }
       is_restaurant_owner: {
         Args: { p_restaurant_id: string }
         Returns: boolean
