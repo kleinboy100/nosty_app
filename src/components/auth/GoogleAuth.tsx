@@ -71,4 +71,4 @@ export function GoogleAuth() {
       {loading ? 'Signing in…' : 'Continue with Google'}
     </Button>
   );
-        }
+}
