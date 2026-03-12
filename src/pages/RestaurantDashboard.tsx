@@ -9,11 +9,18 @@ import { RestaurantOrderCard } from '@/components/RestaurantOrderCard';
 import { YocoSettings } from '@/components/YocoSettings';
 import { MenuManager } from '@/components/MenuManager';
 import { OperatingHoursSettings } from '@/components/OperatingHoursSettings';
- import { Store, Bell, Volume2, Settings, UtensilsCrossed, BarChart3 } from 'lucide-react';
+import { StaffManager } from '@/components/StaffManager';
+import { Store, Bell, Volume2, Settings, UtensilsCrossed, BarChart3, ExternalLink } from 'lucide-react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useIsRestaurantOwner } from '@/hooks/useIsRestaurantOwner';
+import { useIsRestaurantStaff } from '@/hooks/useIsRestaurantStaff';
+
+const EXTERNAL_DASHBOARD_URL = 'https://kleinboy100.github.io/Dashboard/';
 
 export default function RestaurantDashboard() {
   const { user } = useAuth();
+  const { isOwner } = useIsRestaurantOwner();
+  const { isStaff, staffRestaurantId } = useIsRestaurantStaff();
   const [restaurants, setRestaurants] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState<string>('');
@@ -21,15 +28,17 @@ export default function RestaurantDashboard() {
   const { permission, requestPermission, showNotification, supported } = usePushNotifications();
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Determine if user is staff-only (not owner)
+  const isStaffOnly = isStaff && !isOwner;
+
   useEffect(() => {
     if (user) fetchRestaurants();
-  }, [user]);
+  }, [user, isStaff, staffRestaurantId]);
 
   useEffect(() => {
     if (selectedRestaurant) {
       fetchOrders();
       
-      // Subscribe to realtime order updates
       const channel = supabase
         .channel('restaurant-orders')
         .on('postgres_changes', {
@@ -39,20 +48,13 @@ export default function RestaurantDashboard() {
           filter: `restaurant_id=eq.${selectedRestaurant}`
         }, (payload) => {
           const newOrder = payload.new as any;
-          // Mark as new order
           setNewOrderIds(prev => new Set([...prev, newOrder.id]));
-          
-          // Play notification sound
           playNotificationSound();
-          
-          // Show push notification
           showNotification('🔔 New Order!', {
             body: `New order #${newOrder.id.slice(0, 8)} received. Total: R${Number(newOrder.total_amount).toFixed(2)}`,
             tag: `new-order-${newOrder.id}`,
             requireInteraction: true
           });
-          
-          // Fetch orders to include order_items
           fetchOrders();
         })
         .on('postgres_changes', {
@@ -62,16 +64,12 @@ export default function RestaurantDashboard() {
           filter: `restaurant_id=eq.${selectedRestaurant}`
         }, (payload) => {
           const updatedOrder = payload.new as any;
-          // Immediately update the specific order in state with all new fields
           setOrders(prev => prev.map(o => 
-            o.id === updatedOrder.id 
-              ? { ...o, ...updatedOrder } 
-              : o
+            o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o
           ));
         })
         .subscribe();
 
-      // Poll for payment updates every 5 seconds (catches webhook updates)
       const pollInterval = setInterval(() => {
         fetchOrders();
       }, 5000);
@@ -91,9 +89,17 @@ export default function RestaurantDashboard() {
   };
 
   const fetchRestaurants = async () => {
-    const { data } = await supabase.from('restaurants').select('*').eq('owner_id', user?.id);
-    setRestaurants(data || []);
-    if (data?.[0]) setSelectedRestaurant(data[0].id);
+    if (isStaffOnly && staffRestaurantId) {
+      // Staff: fetch only their assigned restaurant
+      const { data } = await supabase.from('restaurants').select('*').eq('id', staffRestaurantId);
+      setRestaurants(data || []);
+      if (data?.[0]) setSelectedRestaurant(data[0].id);
+    } else {
+      // Owner: fetch owned restaurants
+      const { data } = await supabase.from('restaurants').select('*').eq('owner_id', user?.id);
+      setRestaurants(data || []);
+      if (data?.[0]) setSelectedRestaurant(data[0].id);
+    }
   };
 
   const fetchOrders = async () => {
@@ -107,7 +113,6 @@ export default function RestaurantDashboard() {
 
   const updateStatus = async (orderId: string, status: string) => {
     await supabase.from('orders').update({ status }).eq('id', orderId);
-    // Remove from new orders when acted upon
     setNewOrderIds(prev => {
       const updated = new Set(prev);
       updated.delete(orderId);
@@ -134,13 +139,23 @@ export default function RestaurantDashboard() {
     <div className="min-h-screen py-4 md:py-8 overflow-x-hidden bg-gradient-to-br from-background via-background to-primary/5">
       <div className="container mx-auto px-3 md:px-4 max-w-full">
         <div className="flex flex-wrap justify-between items-center gap-3 mb-4 md:mb-6">
-          <h1 className="font-display text-xl md:text-2xl font-bold gradient-text">Dashboard</h1>
-          <Link to="/restaurant/analytics">
-            <Button variant="outline" className="text-sm" size="sm">
-              <BarChart3 size={16} className="mr-1" />
-              Analytics
-            </Button>
-          </Link>
+          <h1 className="font-display text-xl md:text-2xl font-bold gradient-text">
+            {isStaffOnly ? 'Staff Dashboard' : 'Dashboard'}
+          </h1>
+          <div className="flex gap-2 flex-wrap">
+            <a href={EXTERNAL_DASHBOARD_URL} target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" className="text-sm" size="sm">
+                <ExternalLink size={16} className="mr-1" />
+                Forecasting
+              </Button>
+            </a>
+            <Link to="/restaurant/analytics">
+              <Button variant="outline" className="text-sm" size="sm">
+                <BarChart3 size={16} className="mr-1" />
+                Analytics
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {restaurants.length === 0 ? (
@@ -148,10 +163,14 @@ export default function RestaurantDashboard() {
             <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-2xl flex items-center justify-center">
               <Store size={32} className="text-primary" />
             </div>
-            <p className="text-muted-foreground mb-4">No restaurants yet</p>
-            <Link to="/restaurant/register">
-              <Button className="btn-primary">Register Your First Restaurant</Button>
-            </Link>
+            <p className="text-muted-foreground mb-4">
+              {isStaffOnly ? 'You have not been assigned to a restaurant yet.' : 'No restaurants yet'}
+            </p>
+            {!isStaffOnly && (
+              <Link to="/restaurant/register">
+                <Button className="btn-primary">Register Your First Restaurant</Button>
+              </Link>
+            )}
           </div>
         ) : (
           <>
@@ -206,14 +225,19 @@ export default function RestaurantDashboard() {
                   <span className="hidden sm:inline">Completed</span>
                   <span className="sm:hidden">Done</span>
                 </TabsTrigger>
-                <TabsTrigger value="menu" className="flex-1 min-w-0 text-xs md:text-sm px-2 md:px-3 data-[state=active]:bg-purple-500 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all">
-                  <UtensilsCrossed size={14} className="mr-1 shrink-0" />
-                  <span className="hidden sm:inline">Menu</span>
-                </TabsTrigger>
-                <TabsTrigger value="settings" className="flex-1 min-w-0 text-xs md:text-sm px-2 md:px-3 data-[state=active]:bg-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all">
-                  <Settings size={14} className="mr-1 shrink-0" />
-                  <span className="hidden sm:inline">Settings</span>
-                </TabsTrigger>
+                {/* Only show Menu and Settings for owners */}
+                {!isStaffOnly && (
+                  <>
+                    <TabsTrigger value="menu" className="flex-1 min-w-0 text-xs md:text-sm px-2 md:px-3 data-[state=active]:bg-purple-500 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all">
+                      <UtensilsCrossed size={14} className="mr-1 shrink-0" />
+                      <span className="hidden sm:inline">Menu</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="settings" className="flex-1 min-w-0 text-xs md:text-sm px-2 md:px-3 data-[state=active]:bg-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all">
+                      <Settings size={14} className="mr-1 shrink-0" />
+                      <span className="hidden sm:inline">Settings</span>
+                    </TabsTrigger>
+                  </>
+                )}
               </TabsList>
 
               <TabsContent value="pending">
@@ -270,21 +294,30 @@ export default function RestaurantDashboard() {
                   </div>
                 )}
               </TabsContent>
-              <TabsContent value="menu">
-                <MenuManager restaurantId={selectedRestaurant} />
-              </TabsContent>
-              <TabsContent value="settings">
-                <div className="max-w-xl space-y-8">
-                  <div>
-                    <h2 className="font-semibold text-lg mb-4">Operating Hours</h2>
-                    <OperatingHoursSettings restaurantId={selectedRestaurant} />
-                  </div>
-                  <div>
-                    <h2 className="font-semibold text-lg mb-4">Payment Settings</h2>
-                    <YocoSettings restaurantId={selectedRestaurant} />
-                  </div>
-                </div>
-              </TabsContent>
+
+              {!isStaffOnly && (
+                <>
+                  <TabsContent value="menu">
+                    <MenuManager restaurantId={selectedRestaurant} />
+                  </TabsContent>
+                  <TabsContent value="settings">
+                    <div className="max-w-xl space-y-8">
+                      <div>
+                        <h2 className="font-semibold text-lg mb-4">Operating Hours</h2>
+                        <OperatingHoursSettings restaurantId={selectedRestaurant} />
+                      </div>
+                      <div>
+                        <h2 className="font-semibold text-lg mb-4">Payment Settings</h2>
+                        <YocoSettings restaurantId={selectedRestaurant} />
+                      </div>
+                      <div>
+                        <h2 className="font-semibold text-lg mb-4">Staff Management</h2>
+                        <StaffManager restaurantId={selectedRestaurant} />
+                      </div>
+                    </div>
+                  </TabsContent>
+                </>
+              )}
             </Tabs>
           </>
         )}
