@@ -481,6 +481,45 @@ export type Database = {
           },
         ]
       }
+      restaurant_staff: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          restaurant_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          restaurant_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          restaurant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_staff_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "restaurant_staff_restaurant_id_fkey"
+            columns: ["restaurant_id"]
+            isOneToOne: false
+            referencedRelation: "restaurants_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restaurants: {
         Row: {
           address: string
@@ -865,6 +904,7 @@ export type Database = {
         Args: { p_restaurant_id: string }
         Returns: boolean
       }
+      is_restaurant_staff: { Args: never; Returns: boolean }
       owner_has_payment_keys: {
         Args: { p_restaurant_id: string }
         Returns: boolean
