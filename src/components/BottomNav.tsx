@@ -3,6 +3,7 @@ import { Home, ClipboardList, ShoppingCart } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { useIsRestaurantOwner } from '@/hooks/useIsRestaurantOwner';
+import { useIsRestaurantStaff } from '@/hooks/useIsRestaurantStaff';
 import { cn } from '@/lib/utils';
 
 export function BottomNav() {
@@ -10,9 +11,10 @@ export function BottomNav() {
   const { itemCount } = useCart();
   const location = useLocation();
   const { isOwner } = useIsRestaurantOwner();
+  const { isStaff } = useIsRestaurantStaff();
 
-  // Hide bottom nav entirely for restaurant owners
-  if (isOwner) {
+  // Hide bottom nav for restaurant owners and staff
+  if (isOwner || isStaff) {
     return null;
   }
 

@@ -7,6 +7,7 @@ import { HeroSlideshow } from '@/components/HeroSlideshow';
 import { supabase } from '@/integrations/supabase/client';
 import { useRestaurantOperatingStatus } from '@/hooks/useRestaurantOperatingStatus';
 import { useIsRestaurantOwner } from '@/hooks/useIsRestaurantOwner';
+import { useIsRestaurantStaff } from '@/hooks/useIsRestaurantStaff';
 import { cn } from '@/lib/utils';
 
 // Nosty's restaurant ID
@@ -31,6 +32,7 @@ const mealCategories = ['All', 'Mains', 'Sides', 'Drinks', 'Desserts', 'Combos',
 export default function Index() {
   const navigate = useNavigate();
   const { isOwner, loading: ownerLoading } = useIsRestaurantOwner();
+  const { isStaff, loading: staffLoading } = useIsRestaurantStaff();
   const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,12 +41,12 @@ export default function Index() {
   
   const { isOpen, loading: statusLoading } = useRestaurantOperatingStatus(NOSTY_RESTAURANT_ID);
 
-  // Redirect restaurant owners to dashboard
+  // Redirect restaurant owners and staff to dashboard
   useEffect(() => {
-    if (!ownerLoading && isOwner) {
+    if (!ownerLoading && !staffLoading && (isOwner || isStaff)) {
       navigate('/restaurant/dashboard', { replace: true });
     }
-  }, [isOwner, ownerLoading, navigate]);
+  }, [isOwner, isStaff, ownerLoading, staffLoading, navigate]);
 
   useEffect(() => {
     fetchData();
