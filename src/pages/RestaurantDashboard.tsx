@@ -15,7 +15,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useIsRestaurantOwner } from '@/hooks/useIsRestaurantOwner';
 import { useIsRestaurantStaff } from '@/hooks/useIsRestaurantStaff';
 
-const EXTERNAL_DASHBOARD_URL = 'https://restaurant-demand-forecasting-1.onrender.com';
+const EXTERNAL_DASHBOARD_URL = 'https://restaurant-demand-forecasting-1.onrender.com/docs';
 
 export default function RestaurantDashboard() {
   const { user } = useAuth();
