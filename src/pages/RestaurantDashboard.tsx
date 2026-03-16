@@ -10,10 +10,12 @@ import { YocoSettings } from '@/components/YocoSettings';
 import { MenuManager } from '@/components/MenuManager';
 import { OperatingHoursSettings } from '@/components/OperatingHoursSettings';
 import { StaffManager } from '@/components/StaffManager';
-import { Store, Bell, Volume2, Settings, UtensilsCrossed, BarChart3, ExternalLink } from 'lucide-react';
+import { Store, Bell, Volume2, Settings, UtensilsCrossed, BarChart3, ExternalLink, ChefHat, Package } from 'lucide-react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useIsRestaurantOwner } from '@/hooks/useIsRestaurantOwner';
 import { useIsRestaurantStaff } from '@/hooks/useIsRestaurantStaff';
+import { RecipeManager } from '@/components/RecipeManager';
+import { StockManager } from '@/components/StockManager';
 
 const EXTERNAL_DASHBOARD_URL = 'https://restaurant-demand-forecasting-1.onrender.com';
 
