@@ -306,6 +306,14 @@ export default function RestaurantDashboard() {
                 )}
               </TabsContent>
 
+              {/* Stock & Recipes - accessible to owner and staff */}
+              <TabsContent value="stock">
+                <StockManager restaurantId={selectedRestaurant} />
+              </TabsContent>
+              <TabsContent value="recipes">
+                <RecipeManager />
+              </TabsContent>
+
               {!isStaffOnly && (
                 <>
                   <TabsContent value="menu">
