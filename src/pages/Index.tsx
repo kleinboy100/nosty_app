@@ -41,7 +41,12 @@ export default function Index() {
   
   const { isOpen, loading: statusLoading } = useRestaurantOperatingStatus(NOSTY_RESTAURANT_ID);
 
-  // No longer auto-redirect owners/staff — they can browse the menu and place orders too
+  // Redirect restaurant owners and staff to dashboard
+  useEffect(() => {
+    if (!ownerLoading && !staffLoading && (isOwner || isStaff)) {
+      navigate('/restaurant/dashboard', { replace: true });
+    }
+  }, [isOwner, isStaff, ownerLoading, staffLoading, navigate]);
 
   useEffect(() => {
     fetchData();
