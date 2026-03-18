@@ -1,0 +1,1 @@
+ALTER TABLE meal_recipes ALTER COLUMN quantity_per_meal TYPE numeric USING quantity_per_meal::numeric;
