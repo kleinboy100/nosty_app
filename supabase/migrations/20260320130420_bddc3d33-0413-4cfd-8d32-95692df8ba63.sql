@@ -1,0 +1,1 @@
+UPDATE menu_items SET category = 'Loafs' WHERE category = 'Loafds';
